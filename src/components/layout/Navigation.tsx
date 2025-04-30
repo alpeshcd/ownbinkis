@@ -4,7 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, Avat arImage } from "@/components/ui/avatar";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -27,7 +27,10 @@ import {
   Building,
   Briefcase,
   Ticket,
-  DollarSign
+  DollarSign,
+  Database,
+  BarChart,
+  Lightbulb
 } from "lucide-react";
 
 export const Navigation = () => {
@@ -48,6 +51,18 @@ export const Navigation = () => {
       label: "User Management",
       path: "/users",
       icon: <Users className="h-5 w-5" />,
+      roles: ["admin"],
+    },
+    {
+      label: "Reports",
+      path: "/reports",
+      icon: <BarChart className="h-5 w-5" />,
+      roles: ["admin"],
+    },
+    {
+      label: "Database Management",
+      path: "/database",
+      icon: <Database className="h-5 w-5" />,
       roles: ["admin"],
     },
     {
@@ -85,6 +100,18 @@ export const Navigation = () => {
       path: "/vendors",
       icon: <Building className="h-5 w-5" />,
       roles: ["admin", "supervisor", "finance", "vendor"],
+    },
+    {
+      label: "Billing",
+      path: "/billing",
+      icon: <FileText className="h-5 w-5" />,
+      roles: ["admin", "finance", "vendor"],
+    },
+    {
+      label: "AI Insights",
+      path: "/ai-insights",
+      icon: <Lightbulb className="h-5 w-5" />,
+      roles: ["admin", "supervisor", "finance"],
     },
     {
       label: "Settings",
