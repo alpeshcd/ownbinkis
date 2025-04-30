@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,53 +16,45 @@ import { useToast } from "@/components/ui/use-toast";
 // Mock ticket data
 const initialTickets = [
   {
-    id: "TKT-001",
+    id: "TICK-001",
     projectId: "PRJ-001",
     projectName: "Website Redesign",
-    title: "Homepage Layout Issues",
-    status: "open",
-    assignedTo: "Developer A",
-    createdAt: "2024-04-15",
+    title: "Homepage Layout Issue",
+    status: "open" as "open" | "in-progress" | "resolved" | "closed",
+    assignedTo: "John Doe",
+    createdAt: "2024-05-01",
     priority: "high",
   },
   {
-    id: "TKT-002",
+    id: "TICK-002",
     projectId: "PRJ-001",
     projectName: "Website Redesign",
-    title: "Mobile Responsiveness",
-    status: "in-progress",
-    assignedTo: "Developer B",
-    createdAt: "2024-04-20",
+    title: "Contact Form Not Working",
+    status: "in-progress" as "open" | "in-progress" | "resolved" | "closed",
+    assignedTo: "Jane Smith",
+    createdAt: "2024-05-02",
+    priority: "high",
+  },
+  {
+    id: "TICK-003",
+    projectId: "PRJ-002",
+    projectName: "SEO Campaign",
+    title: "Meta Tags Update",
+    status: "resolved" as "open" | "in-progress" | "resolved" | "closed",
+    assignedTo: "Alex Johnson",
+    createdAt: "2024-04-28",
     priority: "medium",
   },
   {
-    id: "TKT-003",
+    id: "TICK-004",
     projectId: "PRJ-002",
     projectName: "SEO Campaign",
     title: "Keyword Research",
-    status: "resolved",
-    assignedTo: "Marketing Specialist",
-    createdAt: "2024-03-25",
-    priority: "medium",
+    status: "closed" as "open" | "in-progress" | "resolved" | "closed",
+    assignedTo: "Sarah Williams",
+    createdAt: "2024-04-15",
+    priority: "low",
   },
-  {
-    id: "TKT-004",
-    projectId: "PRJ-004",
-    projectName: "Network Upgrade",
-    title: "Server Configuration",
-    status: "open",
-    assignedTo: "IT Specialist",
-    createdAt: "2024-05-05",
-    priority: "critical",
-  },
-];
-
-// Mock projects for dropdown
-const projectOptions = [
-  { id: "PRJ-001", name: "Website Redesign" },
-  { id: "PRJ-002", name: "SEO Campaign" },
-  { id: "PRJ-003", name: "Logo Creation" },
-  { id: "PRJ-004", name: "Network Upgrade" },
 ];
 
 interface Ticket {
@@ -74,112 +65,62 @@ interface Ticket {
   status: "open" | "in-progress" | "resolved" | "closed";
   assignedTo: string;
   createdAt: string;
-  priority: "low" | "medium" | "high" | "critical";
+  priority: string;
 }
 
 const TicketComponent = () => {
   const [tickets, setTickets] = useState<Ticket[]>(initialTickets);
-  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     projectId: "",
     title: "",
-    description: "",
-    status: "open" as "open" | "in-progress" | "resolved" | "closed",
     assignedTo: "",
-    priority: "medium" as "low" | "medium" | "high" | "critical",
+    priority: "medium",
   });
   const [filter, setFilter] = useState("all");
   const { toast } = useToast();
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const selectedProject = projectOptions.find(p => p.id === formData.projectId);
-    
+
     const newTicket: Ticket = {
-      id: `TKT-${Math.floor(Math.random() * 1000)}`,
+      id: `TICK-${Math.floor(Math.random() * 1000)}`,
       projectId: formData.projectId,
-      projectName: selectedProject?.name || "Unknown Project",
+      projectName: "Related Project Name", // You might want to fetch this from project data
       title: formData.title,
-      status: formData.status,
+      status: "open",
       assignedTo: formData.assignedTo,
       createdAt: new Date().toISOString().split("T")[0],
       priority: formData.priority,
-    };
-    
+    } as Ticket;
+
     setTickets([...tickets, newTicket]);
     resetForm();
-    
+
     toast({
       title: "Ticket Created",
-      description: `Ticket "${formData.title}" has been created successfully.`,
-    });
-  };
-
-  const handleUpdate = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!selectedTicket) return;
-    
-    const selectedProject = projectOptions.find(p => p.id === formData.projectId);
-    
-    setTickets(
-      tickets.map(ticket =>
-        ticket.id === selectedTicket.id
-          ? {
-              ...ticket,
-              projectId: formData.projectId,
-              projectName: selectedProject?.name || ticket.projectName,
-              title: formData.title,
-              status: formData.status,
-              assignedTo: formData.assignedTo,
-              priority: formData.priority,
-            }
-          : ticket
-      )
-    );
-    
-    resetForm();
-    
-    toast({
-      title: "Ticket Updated",
-      description: `Ticket "${formData.title}" has been updated successfully.`,
-    });
-  };
-
-  const handleEdit = (ticket: Ticket) => {
-    setSelectedTicket(ticket);
-    setFormData({
-      projectId: ticket.projectId,
-      title: ticket.title,
-      description: "", // This would come from additional ticket details in a real app
-      status: ticket.status,
-      assignedTo: ticket.assignedTo,
-      priority: ticket.priority,
-    });
-    setIsEditing(true);
-  };
-
-  const handleDelete = (ticketId: string) => {
-    setTickets(tickets.filter(ticket => ticket.id !== ticketId));
-    
-    toast({
-      title: "Ticket Deleted",
-      description: `Ticket has been deleted successfully.`,
+      description: `New ticket "${formData.title}" has been created.`,
     });
   };
 
   const resetForm = () => {
-    setSelectedTicket(null);
-    setIsEditing(false);
     setFormData({
       projectId: "",
       title: "",
-      description: "",
-      status: "open",
       assignedTo: "",
       priority: "medium",
+    });
+  };
+
+  const handleStatusChange = (ticketId: string, newStatus: Ticket["status"]) => {
+    setTickets(
+      tickets.map(ticket =>
+        ticket.id === ticketId ? { ...ticket, status: newStatus } : ticket
+      )
+    );
+
+    toast({
+      title: "Ticket Updated",
+      description: `Ticket status has been updated.`,
     });
   };
 
@@ -190,20 +131,10 @@ const TicketComponent = () => {
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
-      case "open": return "bg-blue-100 text-blue-800 px-2 py-1 rounded";
+      case "open": return "bg-red-100 text-red-800 px-2 py-1 rounded";
       case "in-progress": return "bg-yellow-100 text-yellow-800 px-2 py-1 rounded";
       case "resolved": return "bg-green-100 text-green-800 px-2 py-1 rounded";
       case "closed": return "bg-gray-100 text-gray-800 px-2 py-1 rounded";
-      default: return "bg-gray-100 text-gray-800 px-2 py-1 rounded";
-    }
-  };
-
-  const getPriorityBadgeColor = (priority: string) => {
-    switch (priority) {
-      case "low": return "bg-gray-100 text-gray-800 px-2 py-1 rounded";
-      case "medium": return "bg-blue-100 text-blue-800 px-2 py-1 rounded";
-      case "high": return "bg-orange-100 text-orange-800 px-2 py-1 rounded";
-      case "critical": return "bg-red-100 text-red-800 px-2 py-1 rounded";
       default: return "bg-gray-100 text-gray-800 px-2 py-1 rounded";
     }
   };
@@ -213,126 +144,89 @@ const TicketComponent = () => {
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Ticket Management</h2>
         <p className="text-muted-foreground">
-          Create and manage tickets for projects.
+          Manage and track support tickets for projects.
         </p>
       </div>
-      
+
       <div className="grid gap-6 md:grid-cols-12">
         {/* Ticket Form */}
         <Card className="md:col-span-5">
           <CardHeader>
-            <CardTitle>{isEditing ? "Edit Ticket" : "Create Ticket"}</CardTitle>
+            <CardTitle>Create New Ticket</CardTitle>
             <CardDescription>
-              {isEditing ? "Update ticket details" : "Create a new ticket for a project"}
+              Submit a new support ticket
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={isEditing ? handleUpdate : handleCreate} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="projectId">Project</Label>
-                <select 
+                <Label htmlFor="projectId">Project ID</Label>
+                <Input
                   id="projectId"
-                  className="w-full p-2 border border-gray-300 rounded"
                   value={formData.projectId}
                   onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
                   required
-                >
-                  <option value="">Select a project</option>
-                  {projectOptions.map(project => (
-                    <option key={project.id} value={project.id}>
-                      {project.name} ({project.id})
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Enter project ID"
+                />
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="title">Ticket Title</Label>
-                <Input 
+                <Label htmlFor="title">Title</Label>
+                <Input
                   id="title"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   required
-                  placeholder="Brief description of the issue"
+                  placeholder="Enter ticket title"
                 />
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="description">Detailed Description</Label>
-                <textarea 
-                  id="description"
-                  className="w-full min-h-[100px] p-2 border border-gray-300 rounded"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe the issue in detail"
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <select 
-                    id="status"
-                    className="w-full p-2 border border-gray-300 rounded"
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                    required
-                  >
-                    <option value="open">Open</option>
-                    <option value="in-progress">In Progress</option>
-                    <option value="resolved">Resolved</option>
-                    <option value="closed">Closed</option>
-                  </select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="priority">Priority</Label>
-                  <select 
-                    id="priority"
-                    className="w-full p-2 border border-gray-300 rounded"
-                    value={formData.priority}
-                    onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}
-                    required
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="critical">Critical</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="assignedTo">Assigned To</Label>
-                <Input 
+                <Label htmlFor="assignedTo">Assign To</Label>
+                <Input
                   id="assignedTo"
                   value={formData.assignedTo}
                   onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
-                  placeholder="Name of person assigned"
+                  placeholder="Assign to"
                 />
               </div>
-              
+
+              <div className="space-y-2">
+                <Label htmlFor="priority">Priority</Label>
+                <select
+                  id="priority"
+                  className="w-full p-2 border border-gray-300 rounded"
+                  value={formData.priority}
+                  onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                  required
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+
               <div className="flex justify-between mt-4">
                 <Button variant="outline" type="button" onClick={resetForm}>
-                  {isEditing ? "Cancel" : "Clear"}
+                  Clear
                 </Button>
                 <Button type="submit">
-                  {isEditing ? "Update Ticket" : "Create Ticket"}
+                  Submit Ticket
                 </Button>
               </div>
             </form>
           </CardContent>
         </Card>
-        
+
         {/* Tickets List */}
         <Card className="md:col-span-7">
           <CardHeader>
             <div className="flex justify-between items-center">
-              <CardTitle>Tickets</CardTitle>
-              <select 
+              <CardTitle>Your Tickets</CardTitle>
+              <select
                 className="border border-gray-300 rounded p-1"
                 value={filter}
-                onChange={(e) => setFilter(e.target.value)}
+                onChange={(e) => setFilter(e.target.value as any)}
               >
                 <option value="all">All Status</option>
                 <option value="open">Open</option>
@@ -342,7 +236,7 @@ const TicketComponent = () => {
               </select>
             </div>
             <CardDescription>
-              Manage and track tickets for your projects
+              Track the status of your tickets
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -352,8 +246,8 @@ const TicketComponent = () => {
                   <TableRow>
                     <TableHead>Ticket</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Priority</TableHead>
                     <TableHead>Assigned To</TableHead>
+                    <TableHead>Priority</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -362,42 +256,29 @@ const TicketComponent = () => {
                     <TableRow key={ticket.id}>
                       <TableCell>
                         <div className="font-medium">{ticket.title}</div>
-                        <div className="text-sm text-muted-foreground">{ticket.id}</div>
+                        <div className="text-sm text-muted-foreground">{ticket.projectName}</div>
                         <div className="text-xs text-muted-foreground mt-1">
-                          Project: {ticket.projectName}
+                          Created: {new Date(ticket.createdAt).toLocaleDateString()}
                         </div>
                       </TableCell>
                       <TableCell>
                         <span className={getStatusBadgeColor(ticket.status)}>
-                          {ticket.status
-                            .split("-")
-                            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                            .join(" ")}
+                          {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
                         </span>
                       </TableCell>
+                      <TableCell>{ticket.assignedTo}</TableCell>
+                      <TableCell>{ticket.priority}</TableCell>
                       <TableCell>
-                        <span className={getPriorityBadgeColor(ticket.priority)}>
-                          {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
-                        </span>
-                      </TableCell>
-                      <TableCell>{ticket.assignedTo || "Unassigned"}</TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleEdit(ticket)}
-                          >
-                            Edit
-                          </Button>
-                          <Button 
-                            variant="destructive" 
-                            size="sm"
-                            onClick={() => handleDelete(ticket.id)}
-                          >
-                            Delete
-                          </Button>
-                        </div>
+                        <select
+                          className="border border-gray-300 rounded p-1"
+                          value={ticket.status}
+                          onChange={(e) => handleStatusChange(ticket.id, e.target.value as Ticket["status"])}
+                        >
+                          <option value="open">Open</option>
+                          <option value="in-progress">In Progress</option>
+                          <option value="resolved">Resolved</option>
+                          <option value="closed">Closed</option>
+                        </select>
                       </TableCell>
                     </TableRow>
                   ))}

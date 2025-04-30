@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +22,7 @@ const initialBills = [
     projectId: "PRJ-001",
     projectName: "Website Redesign",
     amount: 5000,
-    status: "paid",
+    status: "paid" as "draft" | "pending" | "paid" | "overdue",
     dueDate: "2024-05-15",
     paidDate: "2024-05-10",
   },
@@ -34,7 +33,7 @@ const initialBills = [
     projectId: "PRJ-002",
     projectName: "SEO Campaign",
     amount: 3500,
-    status: "pending",
+    status: "pending" as "draft" | "pending" | "paid" | "overdue",
     dueDate: "2024-05-30",
     paidDate: null,
   },
@@ -45,7 +44,7 @@ const initialBills = [
     projectId: "PRJ-003",
     projectName: "Logo Creation",
     amount: 1200,
-    status: "overdue",
+    status: "overdue" as "draft" | "pending" | "paid" | "overdue",
     dueDate: "2024-04-30",
     paidDate: null,
   },
@@ -56,7 +55,7 @@ const initialBills = [
     projectId: "PRJ-004",
     projectName: "Network Upgrade",
     amount: 8500,
-    status: "draft",
+    status: "draft" as "draft" | "pending" | "paid" | "overdue",
     dueDate: "2024-06-15",
     paidDate: null,
   },

@@ -23,7 +23,7 @@ const initialVendors = [
     contactPhone: "555-123-4567",
     services: ["Web Development", "IT Support"],
     address: "123 Tech Blvd, San Francisco, CA",
-    status: "active",
+    status: "active" as "active" | "inactive",
   },
   {
     id: "VND-002",
@@ -32,7 +32,7 @@ const initialVendors = [
     contactPhone: "555-234-5678",
     services: ["SEO", "Social Media", "Content Marketing"],
     address: "456 Marketing St, New York, NY",
-    status: "active",
+    status: "active" as "active" | "inactive",
   },
   {
     id: "VND-003",
@@ -41,7 +41,7 @@ const initialVendors = [
     contactPhone: "555-345-6789",
     services: ["Graphic Design", "UI/UX Design", "Branding"],
     address: "789 Creative Ave, Portland, OR",
-    status: "inactive",
+    status: "inactive" as "active" | "inactive",
   },
   {
     id: "VND-004",
@@ -50,7 +50,7 @@ const initialVendors = [
     contactPhone: "555-456-7890",
     services: ["IT Support", "Network Setup", "Hardware Installation"],
     address: "101 Support Ln, Austin, TX",
-    status: "active",
+    status: "active" as "active" | "inactive",
   },
 ];
 
