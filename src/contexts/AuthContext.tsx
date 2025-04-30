@@ -1,5 +1,16 @@
 
 import React, { createContext, useState, useContext, useEffect } from "react";
+import { 
+  User as FirebaseUser,
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signOut, 
+  sendPasswordResetEmail,
+  onAuthStateChanged,
+  updateProfile
+} from "firebase/auth";
+import { doc, setDoc, getDoc } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 import { toast } from "@/components/ui/use-toast";
 
 // Define the User type
@@ -45,146 +56,260 @@ const AuthContext = createContext<AuthContextType>({
   hasRole: () => false,
 });
 
-// This would be connected to Firebase in a real implementation
+// This is now connected to Firebase
 export const useAuth = () => useContext(AuthContext);
 
-// For development/demo purposes, we'll create some fake users
-const demoUsers: Record<string, User> = {
-  "admin@example.com": {
-    id: "admin-id",
-    email: "admin@example.com",
-    name: "Admin User",
-    role: "admin",
-    createdAt: new Date(),
-  },
-  "supervisor@example.com": {
-    id: "supervisor-id",
-    email: "supervisor@example.com",
-    name: "Supervisor User",
-    role: "supervisor",
-    createdAt: new Date(),
-  },
-  "finance@example.com": {
-    id: "finance-id",
-    email: "finance@example.com",
-    name: "Finance User",
-    role: "finance",
-    createdAt: new Date(),
-  },
-  "vendor@example.com": {
-    id: "vendor-id",
-    email: "vendor@example.com",
-    name: "Vendor User",
-    role: "vendor",
-    createdAt: new Date(),
-  },
-  "user@example.com": {
-    id: "user-id",
-    email: "user@example.com",
-    name: "Regular User",
-    role: "user",
-    createdAt: new Date(),
-  },
+// Demo users for easier testing
+const demoUsers: Record<string, { password: string; role: UserRole }> = {
+  "admin@example.com": { password: "password", role: "admin" },
+  "supervisor@example.com": { password: "password", role: "supervisor" },
+  "finance@example.com": { password: "password", role: "finance" },
+  "vendor@example.com": { password: "password", role: "vendor" },
+  "user@example.com": { password: "password", role: "user" },
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Check if there's a stored user on initial load
+  // Firebase auth state monitoring
   useEffect(() => {
-    const storedUser = localStorage.getItem("bnkis_user");
-    if (storedUser) {
-      try {
-        setCurrentUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error("Error parsing stored user:", error);
-        localStorage.removeItem("bnkis_user");
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          // Get user data from Firestore
+          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+          
+          if (userDoc.exists()) {
+            // User exists in Firestore
+            const userData = userDoc.data() as Omit<User, "id">;
+            setCurrentUser({
+              id: firebaseUser.uid,
+              ...userData,
+              createdAt: userData.createdAt instanceof Date 
+                ? userData.createdAt 
+                : new Date(userData.createdAt)
+            });
+          } else {
+            // User exists in auth but not in Firestore
+            // This is an edge case, but we'll handle it
+            const defaultUser: User = {
+              id: firebaseUser.uid,
+              email: firebaseUser.email || "",
+              name: firebaseUser.displayName || "",
+              role: "user",
+              createdAt: new Date()
+            };
+            
+            // Create user document in Firestore
+            await setDoc(doc(db, "users", firebaseUser.uid), {
+              email: defaultUser.email,
+              name: defaultUser.name,
+              role: defaultUser.role,
+              createdAt: defaultUser.createdAt
+            });
+            
+            setCurrentUser(defaultUser);
+          }
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+        }
+      } else {
+        // No user signed in
+        setCurrentUser(null);
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  // Mock login function
+  // Login function
   const login = async (email: string, password: string): Promise<User> => {
-    // In a real app, this would validate against Firebase Auth
     const lowercaseEmail = email.toLowerCase();
     
-    if (!demoUsers[lowercaseEmail] || password !== "password") {
-      throw new Error("Invalid email or password");
+    try {
+      // Check if it's a demo user
+      if (demoUsers[lowercaseEmail]) {
+        // For demo users, we'll create them in Firebase if they don't exist yet
+        try {
+          // Try to sign in first
+          await signInWithEmailAndPassword(auth, lowercaseEmail, demoUsers[lowercaseEmail].password);
+        } catch (error: any) {
+          // If user doesn't exist, create them
+          if (error.code === "auth/user-not-found") {
+            const userCredential = await createUserWithEmailAndPassword(
+              auth, 
+              lowercaseEmail, 
+              demoUsers[lowercaseEmail].password
+            );
+            
+            const firebaseUser = userCredential.user;
+            
+            // Set display name
+            await updateProfile(firebaseUser, {
+              displayName: lowercaseEmail.split("@")[0].replace(/\./g, " ")
+            });
+            
+            // Create user document in Firestore
+            const userData = {
+              email: lowercaseEmail,
+              name: lowercaseEmail.split("@")[0].replace(/\./g, " "),
+              role: demoUsers[lowercaseEmail].role,
+              createdAt: new Date()
+            };
+            
+            await setDoc(doc(db, "users", firebaseUser.uid), userData);
+            
+            // Now sign in
+            await signInWithEmailAndPassword(auth, lowercaseEmail, demoUsers[lowercaseEmail].password);
+          } else {
+            throw error;
+          }
+        }
+      } else {
+        // Regular login
+        await signInWithEmailAndPassword(auth, lowercaseEmail, password);
+      }
+      
+      // User data will be set by the auth state change listener
+      // Wait for the auth state to update
+      return new Promise((resolve, reject) => {
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+          unsubscribe();
+          
+          if (!firebaseUser) {
+            reject(new Error("Authentication failed"));
+            return;
+          }
+          
+          try {
+            const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+            
+            if (!userDoc.exists()) {
+              reject(new Error("User data not found"));
+              return;
+            }
+            
+            const userData = userDoc.data() as Omit<User, "id">;
+            const user: User = {
+              id: firebaseUser.uid,
+              ...userData,
+              createdAt: userData.createdAt instanceof Date 
+                ? userData.createdAt 
+                : new Date(userData.createdAt)
+            };
+            
+            toast({
+              title: "Login Successful",
+              description: `Welcome back, ${user.name}!`,
+            });
+            
+            resolve(user);
+          } catch (error) {
+            reject(error);
+          }
+        });
+      });
+    } catch (error: any) {
+      // Handle specific Firebase auth errors
+      if (error.code === "auth/wrong-password") {
+        throw new Error("Invalid password");
+      } else if (error.code === "auth/user-not-found") {
+        throw new Error("User not found");
+      } else if (error.code === "auth/invalid-email") {
+        throw new Error("Invalid email format");
+      } else if (error.code === "auth/too-many-requests") {
+        throw new Error("Too many login attempts. Please try again later.");
+      } else {
+        throw new Error(error.message || "Failed to log in");
+      }
     }
-    
-    const user = demoUsers[lowercaseEmail];
-    setCurrentUser(user);
-    localStorage.setItem("bnkis_user", JSON.stringify(user));
-    
-    toast({
-      title: "Login Successful",
-      description: `Welcome back, ${user.name}!`,
-    });
-    
-    return user;
   };
 
-  // Mock register function
+  // Register function
   const register = async (email: string, password: string, name: string): Promise<User> => {
-    // In a real app, this would create a Firebase Auth user
     const lowercaseEmail = email.toLowerCase();
     
-    if (demoUsers[lowercaseEmail]) {
-      throw new Error("Email already in use");
+    try {
+      // Create user in Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, lowercaseEmail, password);
+      const firebaseUser = userCredential.user;
+      
+      // Set display name
+      await updateProfile(firebaseUser, { displayName: name });
+      
+      // Create user document in Firestore
+      const userData = {
+        email: lowercaseEmail,
+        name,
+        role: "user" as UserRole, // Default role for new registrations
+        createdAt: new Date()
+      };
+      
+      await setDoc(doc(db, "users", firebaseUser.uid), userData);
+      
+      // Create user object
+      const user: User = {
+        id: firebaseUser.uid,
+        ...userData
+      };
+      
+      toast({
+        title: "Registration Successful",
+        description: `Welcome to BNKIS, ${name}!`,
+      });
+      
+      return user;
+    } catch (error: any) {
+      // Handle specific Firebase auth errors
+      if (error.code === "auth/email-already-in-use") {
+        throw new Error("Email already in use");
+      } else if (error.code === "auth/invalid-email") {
+        throw new Error("Invalid email format");
+      } else if (error.code === "auth/weak-password") {
+        throw new Error("Password is too weak");
+      } else {
+        throw new Error(error.message || "Failed to register");
+      }
     }
-    
-    if (password.length < 6) {
-      throw new Error("Password must be at least 6 characters");
-    }
-    
-    const newUser: User = {
-      id: `user-${Date.now()}`,
-      email: lowercaseEmail,
-      name,
-      role: "user", // Default role for new registrations
-      createdAt: new Date(),
-    };
-    
-    // Add to our demo users
-    demoUsers[lowercaseEmail] = newUser;
-    
-    // Set as current user
-    setCurrentUser(newUser);
-    localStorage.setItem("bnkis_user", JSON.stringify(newUser));
-    
-    toast({
-      title: "Registration Successful",
-      description: `Welcome to BNKIS, ${name}!`,
-    });
-    
-    return newUser;
   };
 
-  // Mock logout function
+  // Logout function
   const logout = async (): Promise<void> => {
-    setCurrentUser(null);
-    localStorage.removeItem("bnkis_user");
-    toast({
-      title: "Logged Out",
-      description: "You have been successfully logged out",
-    });
+    try {
+      await signOut(auth);
+      
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out",
+      });
+    } catch (error: any) {
+      console.error("Logout error:", error);
+      throw new Error("Failed to log out");
+    }
   };
 
-  // Mock reset password function
+  // Reset password function
   const resetPassword = async (email: string): Promise<void> => {
     const lowercaseEmail = email.toLowerCase();
     
-    if (!demoUsers[lowercaseEmail]) {
-      throw new Error("Email not found");
+    try {
+      await sendPasswordResetEmail(auth, lowercaseEmail);
+      
+      toast({
+        title: "Password Reset Email Sent",
+        description: "Check your email for further instructions",
+      });
+    } catch (error: any) {
+      if (error.code === "auth/user-not-found") {
+        throw new Error("Email not found");
+      } else if (error.code === "auth/invalid-email") {
+        throw new Error("Invalid email format");
+      } else {
+        throw new Error(error.message || "Failed to send password reset email");
+      }
     }
-    
-    // In a real app, this would send a reset email via Firebase
-    toast({
-      title: "Password Reset Email Sent",
-      description: "Check your email for further instructions",
-    });
   };
 
   // Check if a user has one of the specified roles
