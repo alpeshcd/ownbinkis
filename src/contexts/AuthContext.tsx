@@ -10,7 +10,8 @@ import {
   updateProfile
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import auth from "@/firebase/auth";
+import { db } from "@/firebase/firestore";
 import { toast } from "@/components/ui/use-toast";
 
 // Define the User type
