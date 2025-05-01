@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,15 +19,6 @@ const Login = () => {
   
   const from = location.state?.from?.pathname || "/";
 
-  // Demo users for easy login
-  const demoUsers = [
-    { email: "admin@example.com", role: "Admin" },
-    { email: "supervisor@example.com", role: "Supervisor" },
-    { email: "finance@example.com", role: "Finance" },
-    { email: "vendor@example.com", role: "Vendor" },
-    { email: "user@example.com", role: "User" },
-  ];
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -39,25 +31,6 @@ const Login = () => {
       setError((err as Error).message);
       toast({
         title: "Login Failed",
-        description: (err as Error).message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loginAsDemoUser = async (email: string) => {
-    setEmail(email);
-    setPassword("password"); // All demo users have the same password
-    try {
-      setIsLoading(true);
-      await login(email, "password");
-      navigate(from, { replace: true });
-    } catch (err) {
-      setError((err as Error).message);
-      toast({
-        title: "Demo Login Failed",
         description: (err as Error).message,
         variant: "destructive",
       });
@@ -131,27 +104,6 @@ const Login = () => {
                   Register
                 </Link>
               </p>
-
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium text-center">Quick Demo Login</h4>
-                <p className="text-xs text-gray-500 text-center">
-                  Use password "password" for all demo accounts
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  {demoUsers.map((user) => (
-                    <Button
-                      key={user.email}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => loginAsDemoUser(user.email)}
-                      disabled={isLoading}
-                      className="text-xs"
-                    >
-                      {user.role}
-                    </Button>
-                  ))}
-                </div>
-              </div>
             </div>
           </CardContent>
           

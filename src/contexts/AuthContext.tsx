@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { 
   User as FirebaseUser,
@@ -89,7 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               ...userData,
               createdAt: userData.createdAt instanceof Date 
                 ? userData.createdAt 
-                : new Date(userData.createdAt)
+                : new Date(userData.createdAt instanceof Object ? userData.createdAt.toDate() : userData.createdAt)
             });
           } else {
             // User exists in auth but not in Firestore
@@ -114,6 +113,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         } catch (error) {
           console.error("Error fetching user data:", error);
+          // Set user with basic info from Firebase Auth to avoid login failures
+          setCurrentUser({
+            id: firebaseUser.uid,
+            email: firebaseUser.email || "",
+            name: firebaseUser.displayName || "",
+            role: "user",
+            createdAt: new Date()
+          });
         }
       } else {
         // No user signed in
@@ -125,93 +132,77 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  // Login function
+  // Login function - simplified to focus on Firebase authentication
   const login = async (email: string, password: string): Promise<User> => {
     const lowercaseEmail = email.toLowerCase();
     
     try {
-      // Check if it's a demo user
-      if (demoUsers[lowercaseEmail]) {
-        // For demo users, we'll create them in Firebase if they don't exist yet
-        try {
-          // Try to sign in first
-          await signInWithEmailAndPassword(auth, lowercaseEmail, demoUsers[lowercaseEmail].password);
-        } catch (error: any) {
-          // If user doesn't exist, create them
-          if (error.code === "auth/user-not-found") {
-            const userCredential = await createUserWithEmailAndPassword(
-              auth, 
-              lowercaseEmail, 
-              demoUsers[lowercaseEmail].password
-            );
-            
-            const firebaseUser = userCredential.user;
-            
-            // Set display name
-            await updateProfile(firebaseUser, {
-              displayName: lowercaseEmail.split("@")[0].replace(/\./g, " ")
-            });
-            
-            // Create user document in Firestore
-            const userData = {
-              email: lowercaseEmail,
-              name: lowercaseEmail.split("@")[0].replace(/\./g, " "),
-              role: demoUsers[lowercaseEmail].role,
-              createdAt: new Date()
-            };
-            
-            await setDoc(doc(db, "users", firebaseUser.uid), userData);
-            
-            // Now sign in
-            await signInWithEmailAndPassword(auth, lowercaseEmail, demoUsers[lowercaseEmail].password);
-          } else {
-            throw error;
-          }
+      // Sign in with Firebase
+      const userCredential = await signInWithEmailAndPassword(auth, lowercaseEmail, password);
+      const firebaseUser = userCredential.user;
+
+      // Try to get user data from Firestore
+      try {
+        const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+        
+        if (userDoc.exists()) {
+          const userData = userDoc.data() as Omit<User, "id">;
+          const user: User = {
+            id: firebaseUser.uid,
+            ...userData,
+            createdAt: userData.createdAt instanceof Date 
+              ? userData.createdAt 
+              : new Date(userData.createdAt instanceof Object ? userData.createdAt.toDate() : userData.createdAt)
+          };
+          
+          toast({
+            title: "Login Successful",
+            description: `Welcome back, ${user.name}!`,
+          });
+          
+          return user;
+        } else {
+          // If user exists in Auth but not in Firestore, create a default user document
+          const defaultUser: User = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email || "",
+            name: firebaseUser.displayName || email.split('@')[0],
+            role: "user",
+            createdAt: new Date()
+          };
+          
+          await setDoc(doc(db, "users", firebaseUser.uid), {
+            email: defaultUser.email,
+            name: defaultUser.name,
+            role: defaultUser.role,
+            createdAt: defaultUser.createdAt
+          });
+          
+          toast({
+            title: "Login Successful",
+            description: `Welcome, ${defaultUser.name}!`,
+          });
+          
+          return defaultUser;
         }
-      } else {
-        // Regular login
-        await signInWithEmailAndPassword(auth, lowercaseEmail, password);
-      }
-      
-      // User data will be set by the auth state change listener
-      // Wait for the auth state to update
-      return new Promise((resolve, reject) => {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-          unsubscribe();
-          
-          if (!firebaseUser) {
-            reject(new Error("Authentication failed"));
-            return;
-          }
-          
-          try {
-            const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-            
-            if (!userDoc.exists()) {
-              reject(new Error("User data not found"));
-              return;
-            }
-            
-            const userData = userDoc.data() as Omit<User, "id">;
-            const user: User = {
-              id: firebaseUser.uid,
-              ...userData,
-              createdAt: userData.createdAt instanceof Date 
-                ? userData.createdAt 
-                : new Date(userData.createdAt)
-            };
-            
-            toast({
-              title: "Login Successful",
-              description: `Welcome back, ${user.name}!`,
-            });
-            
-            resolve(user);
-          } catch (error) {
-            reject(error);
-          }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        // Even if Firestore is offline, we can still create a user object from Auth data
+        const fallbackUser: User = {
+          id: firebaseUser.uid,
+          email: firebaseUser.email || "",
+          name: firebaseUser.displayName || email.split('@')[0],
+          role: "user",
+          createdAt: new Date()
+        };
+        
+        toast({
+          title: "Login Successful",
+          description: "Welcome back!",
         });
-      });
+        
+        return fallbackUser;
+      }
     } catch (error: any) {
       // Handle specific Firebase auth errors
       if (error.code === "auth/wrong-password") {
@@ -228,7 +219,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Register function
+  // Register function - keep as is, it's working well
   const register = async (email: string, password: string, name: string): Promise<User> => {
     const lowercaseEmail = email.toLowerCase();
     
