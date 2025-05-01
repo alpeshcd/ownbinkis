@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { 
   User as FirebaseUser,
@@ -59,18 +60,26 @@ const AuthContext = createContext<AuthContextType>({
 // This is now connected to Firebase
 export const useAuth = () => useContext(AuthContext);
 
-// Demo users for easier testing
-const demoUsers: Record<string, { password: string; role: UserRole }> = {
-  "admin@example.com": { password: "password", role: "admin" },
-  "supervisor@example.com": { password: "password", role: "supervisor" },
-  "finance@example.com": { password: "password", role: "finance" },
-  "vendor@example.com": { password: "password", role: "vendor" },
-  "user@example.com": { password: "password", role: "user" },
-};
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Helper function to safely convert Firestore timestamp to Date
+  const safelyConvertToDate = (dateField: any): Date => {
+    if (dateField instanceof Date) {
+      return dateField;
+    }
+    // Check if it's a Firestore timestamp (has toDate method)
+    if (dateField && typeof dateField === 'object' && 'toDate' in dateField) {
+      return dateField.toDate();
+    }
+    // If it's a string or timestamp number, convert to Date
+    if (dateField) {
+      return new Date(dateField);
+    }
+    // Default to current date if all else fails
+    return new Date();
+  };
 
   // Firebase auth state monitoring
   useEffect(() => {
@@ -86,9 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setCurrentUser({
               id: firebaseUser.uid,
               ...userData,
-              createdAt: userData.createdAt instanceof Date 
-                ? userData.createdAt 
-                : new Date(userData.createdAt instanceof Object ? userData.createdAt.toDate() : userData.createdAt)
+              createdAt: safelyConvertToDate(userData.createdAt)
             });
           } else {
             // User exists in auth but not in Firestore
@@ -150,9 +157,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const user: User = {
             id: firebaseUser.uid,
             ...userData,
-            createdAt: userData.createdAt instanceof Date 
-              ? userData.createdAt 
-              : new Date(userData.createdAt instanceof Object ? userData.createdAt.toDate() : userData.createdAt)
+            createdAt: safelyConvertToDate(userData.createdAt)
           };
           
           toast({
