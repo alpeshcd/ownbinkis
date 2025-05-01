@@ -14,6 +14,7 @@ import { Login, Register, ForgotPassword } from "@/modules/auth";
 
 // Common Module
 import { Dashboard, Unauthorized } from "@/modules/common";
+import Settings from "@/modules/common/Settings"; // Import the Settings component
 
 // User Module
 import { Profile } from "@/modules/user";
@@ -75,6 +76,16 @@ const App = () => (
                         <Profile />
                       </PrivateRoute>
                     } 
+                  />
+
+                  {/* Settings Route */}
+                  <Route
+                    path="/settings"
+                    element={
+                      <PrivateRoute>
+                        <Settings />
+                      </PrivateRoute>
+                    }
                   />
                   
                   {/* Admin Routes */}
