@@ -34,7 +34,7 @@ const UserManagement = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    role: "user",
+    role: "user" as UserRole,
     password: "",
   });
   const { toast } = useToast();
@@ -112,7 +112,7 @@ const UserManagement = () => {
         // Update existing user - only update name and role
         const userData = {
           name: formData.name,
-          role: formData.role,
+          role: formData.role as UserRole,
         };
         
         await updateDocument("users", selectedUser.id, userData);
@@ -142,13 +142,13 @@ const UserManagement = () => {
         const userData = {
           name: formData.name,
           email: formData.email,
-          role: formData.role as UserRole,
+          role: formData.role,
         };
         
         await createDocument("users", userData, firebaseUser.uid);
         
         // 3. Add to local state
-        const newUser = {
+        const newUser: User = {
           id: firebaseUser.uid,
           ...userData,
           createdAt: new Date(),
