@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,59 +27,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { UserRole } from "@/contexts/AuthContext";
-
-// Sample user data
-const initialUsers = [
-  {
-    id: "1",
-    name: "Admin User",
-    email: "admin@example.com",
-    role: "admin" as UserRole,
-    createdAt: new Date("2023-01-15"),
-    status: "active",
-  },
-  {
-    id: "2",
-    name: "John Supervisor",
-    email: "supervisor@example.com",
-    role: "supervisor" as UserRole,
-    createdAt: new Date("2023-02-20"),
-    status: "active",
-  },
-  {
-    id: "3",
-    name: "Jane Finance",
-    email: "finance@example.com",
-    role: "finance" as UserRole,
-    createdAt: new Date("2023-03-10"),
-    status: "active",
-  },
-  {
-    id: "4",
-    name: "Robert Vendor",
-    email: "vendor@example.com",
-    role: "vendor" as UserRole,
-    createdAt: new Date("2023-04-05"),
-    status: "active",
-  },
-  {
-    id: "5",
-    name: "Lisa User",
-    email: "user@example.com",
-    role: "user" as UserRole,
-    createdAt: new Date("2023-05-15"),
-    status: "active",
-  },
-  {
-    id: "6",
-    name: "Tom Smith",
-    email: "tom@example.com",
-    role: "user" as UserRole,
-    createdAt: new Date("2023-06-20"),
-    status: "inactive",
-  },
-];
+import { UserRole, useAuth } from "@/contexts/AuthContext";
+import { getCollection, createDocument, updateDocument, deleteDocument } from "@/firebase/firestore";
+import { auth } from "@/firebase/auth";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 
 interface User {
   id: string;
@@ -91,11 +42,13 @@ interface User {
 }
 
 const UserManagement = () => {
-  const [users, setUsers] = useState<User[]>(initialUsers);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [isEditUserOpen, setIsEditUserOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
+  const { currentUser } = useAuth();
 
   // New user form data
   const [newUser, setNewUser] = useState({
@@ -108,8 +61,40 @@ const UserManagement = () => {
   // Edit user form data
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  // Fetch users from Firebase
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const usersData = await getCollection("users");
+      
+      const formattedUsers = usersData.map((user) => ({
+        id: user.id,
+        name: user.name || "",
+        email: user.email || "",
+        role: (user.role || "user") as UserRole,
+        createdAt: user.createdAt ? new Date(user.createdAt.seconds * 1000) : new Date(),
+        status: "active", // Default status
+      }));
+      
+      setUsers(formattedUsers);
+    } catch (error: any) {
+      console.error("Error fetching users:", error);
+      toast({
+        title: "Error",
+        description: `Failed to load users: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Handle adding a new user
-  const handleAddUser = () => {
+  const handleAddUser = async () => {
     // Validation
     if (!newUser.name || !newUser.email || !newUser.password) {
       toast({
@@ -120,63 +105,129 @@ const UserManagement = () => {
       return;
     }
 
-    // Create new user object
-    const user: User = {
-      id: `user-${Date.now()}`,
-      name: newUser.name,
-      email: newUser.email,
-      role: newUser.role,
-      createdAt: new Date(),
-      status: "active",
-    };
-
-    // Add to users list
-    setUsers([...users, user]);
-
-    // Reset form and close dialog
-    setNewUser({
-      name: "",
-      email: "",
-      role: "user",
-      password: "",
-    });
-    setIsAddUserOpen(false);
-
-    toast({
-      title: "User Added",
-      description: `${user.name} has been added successfully.`,
-    });
+    try {
+      // 1. Create auth user
+      const userCredential = await createUserWithEmailAndPassword(
+        auth, 
+        newUser.email, 
+        newUser.password
+      );
+      
+      const firebaseUser = userCredential.user;
+      
+      // 2. Create user document in Firestore
+      const userData = {
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+      };
+      
+      await createDocument("users", userData, firebaseUser.uid);
+      
+      // 3. Add to local state
+      const user: User = {
+        id: firebaseUser.uid,
+        ...userData,
+        createdAt: new Date(),
+        status: "active",
+      };
+      
+      setUsers([...users, user]);
+      
+      // Reset form and close dialog
+      setNewUser({
+        name: "",
+        email: "",
+        role: "user",
+        password: "",
+      });
+      setIsAddUserOpen(false);
+      
+      toast({
+        title: "User Added",
+        description: `${user.name} has been added successfully.`,
+      });
+    } catch (error: any) {
+      console.error("Error adding user:", error);
+      toast({
+        title: "Error",
+        description: `Failed to add user: ${error.message}`,
+        variant: "destructive",
+      });
+    }
   };
 
   // Handle editing a user
-  const handleEditUser = () => {
+  const handleEditUser = async () => {
     if (!editingUser) return;
 
-    const updatedUsers = users.map((user) =>
-      user.id === editingUser.id ? editingUser : user
-    );
-
-    setUsers(updatedUsers);
-    setIsEditUserOpen(false);
-
-    toast({
-      title: "User Updated",
-      description: `${editingUser.name}'s information has been updated.`,
-    });
+    try {
+      // Update user in Firebase
+      const userData = {
+        name: editingUser.name,
+        role: editingUser.role,
+        // Email can't be updated
+      };
+      
+      await updateDocument("users", editingUser.id, userData);
+      
+      // Update local state
+      const updatedUsers = users.map((user) =>
+        user.id === editingUser.id ? editingUser : user
+      );
+      
+      setUsers(updatedUsers);
+      setIsEditUserOpen(false);
+      
+      toast({
+        title: "User Updated",
+        description: `${editingUser.name}'s information has been updated.`,
+      });
+    } catch (error: any) {
+      console.error("Error updating user:", error);
+      toast({
+        title: "Error",
+        description: `Failed to update user: ${error.message}`,
+        variant: "destructive",
+      });
+    }
   };
 
   // Handle deleting a user
-  const handleDeleteUser = (userId: string) => {
+  const handleDeleteUser = async (userId: string) => {
+    // Don't allow deleting the current user
+    if (userId === currentUser?.id) {
+      toast({
+        title: "Error",
+        description: "You cannot delete your own account.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const userToDelete = users.find((user) => user.id === userId);
     if (!userToDelete) return;
-
-    const updatedUsers = users.filter((user) => user.id !== userId);
-    setUsers(updatedUsers);
-
-    toast({
-      title: "User Deleted",
-      description: `${userToDelete.name} has been removed from the system.`,
-    });
+    
+    try {
+      // Delete from Firebase
+      await deleteDocument("users", userId);
+      
+      // Update local state
+      const updatedUsers = users.filter((user) => user.id !== userId);
+      setUsers(updatedUsers);
+      
+      toast({
+        title: "User Deleted",
+        description: `${userToDelete.name} has been removed from the system.`,
+      });
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
+      toast({
+        title: "Error",
+        description: `Failed to delete user: ${error.message}`,
+        variant: "destructive",
+      });
+    }
   };
 
   // Filter users based on search term
@@ -292,7 +343,13 @@ const UserManagement = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredUsers.length === 0 ? (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center">
+                  Loading users...
+                </TableCell>
+              </TableRow>
+            ) : filteredUsers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center">
                   No users found.
@@ -337,7 +394,7 @@ const UserManagement = () => {
                       if (open) setEditingUser(user);
                     }}>
                       <DialogTrigger asChild>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" disabled={currentUser?.id === user.id && currentUser?.role !== "admin"}>
                           Edit
                         </Button>
                       </DialogTrigger>
@@ -373,13 +430,10 @@ const UserManagement = () => {
                                 id="edit-email"
                                 type="email"
                                 value={editingUser.email}
-                                onChange={(e) =>
-                                  setEditingUser({
-                                    ...editingUser,
-                                    email: e.target.value,
-                                  })
-                                }
+                                disabled
+                                className="bg-gray-100"
                               />
+                              <p className="text-xs text-gray-500">Email cannot be changed</p>
                             </div>
                             <div className="space-y-2">
                               <label htmlFor="edit-role" className="text-sm font-medium">
@@ -393,6 +447,7 @@ const UserManagement = () => {
                                     role: value as UserRole,
                                   })
                                 }
+                                disabled={currentUser?.role !== "admin"}
                               >
                                 <SelectTrigger>
                                   <SelectValue />
@@ -442,6 +497,7 @@ const UserManagement = () => {
                       variant="destructive"
                       size="sm"
                       onClick={() => handleDeleteUser(user.id)}
+                      disabled={currentUser?.id === user.id || currentUser?.role !== "admin"}
                     >
                       Delete
                     </Button>
