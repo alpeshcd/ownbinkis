@@ -11,7 +11,7 @@ const Settings = () => {
   
   if (!currentUser) {
     return (
-      <div className="p-6">
+      <div className="container mx-auto px-4 py-8 pt-20">
         <div className="text-center">
           Please log in to access settings.
         </div>
@@ -20,7 +20,7 @@ const Settings = () => {
   }
 
   return (
-    <div className="p-6">
+    <div className="container mx-auto px-4 py-8 pt-20">
       <div className="mb-6">
         <h2 className="text-3xl font-bold">Settings</h2>
         <p className="text-muted-foreground">
@@ -28,7 +28,7 @@ const Settings = () => {
         </p>
       </div>
       
-      <Tabs defaultValue="account">
+      <Tabs defaultValue="account" className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="account">Account</TabsTrigger>
           
