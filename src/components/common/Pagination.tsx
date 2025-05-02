@@ -14,15 +14,17 @@ interface PaginationControlProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  isLoading?: boolean;
 }
 
 const PaginationControl: React.FC<PaginationControlProps> = ({
   currentPage,
   totalPages,
   onPageChange,
+  isLoading = false,
 }) => {
   const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
+    if (!isLoading && page >= 1 && page <= totalPages) {
       onPageChange(page);
     }
   };
@@ -79,6 +81,10 @@ const PaginationControl: React.FC<PaginationControlProps> = ({
     return pages;
   };
 
+  if (totalPages <= 1) {
+    return null; // Don't show pagination if there's only one page
+  }
+
   const pageNumbers = getPageNumbers();
 
   return (
@@ -87,7 +93,8 @@ const PaginationControl: React.FC<PaginationControlProps> = ({
         <PaginationItem>
           <PaginationPrevious
             onClick={() => handlePageChange(currentPage - 1)}
-            className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+            className={currentPage === 1 || isLoading ? "pointer-events-none opacity-50" : "cursor-pointer"}
+            aria-disabled={currentPage === 1 || isLoading}
           />
         </PaginationItem>
 
@@ -105,6 +112,7 @@ const PaginationControl: React.FC<PaginationControlProps> = ({
               <PaginationLink
                 isActive={currentPage === page}
                 onClick={() => handlePageChange(Number(page))}
+                className={isLoading ? "pointer-events-none" : ""}
               >
                 {page}
               </PaginationLink>
@@ -115,7 +123,8 @@ const PaginationControl: React.FC<PaginationControlProps> = ({
         <PaginationItem>
           <PaginationNext
             onClick={() => handlePageChange(currentPage + 1)}
-            className={currentPage === totalPages || totalPages === 0 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+            className={currentPage === totalPages || totalPages === 0 || isLoading ? "pointer-events-none opacity-50" : "cursor-pointer"}
+            aria-disabled={currentPage === totalPages || totalPages === 0 || isLoading}
           />
         </PaginationItem>
       </PaginationContent>

@@ -3,18 +3,16 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/auth";
 import { updateDocument } from "@/firebase/firestore";
 import { updateProfile } from "firebase/auth";
 import auth from "@/firebase/auth";
-import { usePermissions } from "@/hooks/usePermissions";
+import { Loader2 } from "lucide-react";
 
 const ProfileForm = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, reloadUser } = useAuth();
   const { toast } = useToast();
-  const { canEdit } = usePermissions();
   
   const [formData, setFormData] = useState({
     name: "",
@@ -73,6 +71,9 @@ const ProfileForm = () => {
         }
       }
       
+      // Reload the user to get updated data
+      await reloadUser();
+      
       toast({
         title: "Profile Updated",
         description: "Your profile has been updated successfully.",
@@ -91,102 +92,95 @@ const ProfileForm = () => {
     }
   };
   
-  const canEditProfile = canEdit("users", { isOwnProfile: true });
-  
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle>My Profile</CardTitle>
-        <CardDescription>
-          View and update your profile information
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Full Name</Label>
-            <Input
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              disabled={!isEditing || isLoading}
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="email">Email Address</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              value={formData.email}
-              disabled={true} // Email can't be changed
-              required
-            />
-            <p className="text-xs text-muted-foreground">
-              Email cannot be changed
-            </p>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number</Label>
-            <Input
-              id="phone"
-              name="phone"
-              value={formData.phone || ""}
-              onChange={handleInputChange}
-              disabled={!isEditing || isLoading}
-              placeholder="Enter your phone number"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="role">Role</Label>
-            <Input
-              id="role"
-              name="role"
-              value={formData.role}
-              disabled={true} // Role can't be changed by user
-              required
-            />
-            <p className="text-xs text-muted-foreground">
-              Only administrators can change roles
-            </p>
-          </div>
-          
-          <div className="flex justify-end space-x-2 pt-4">
-            {isEditing ? (
-              <>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setIsEditing(false)}
-                  disabled={isLoading}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Saving..." : "Save Changes"}
-                </Button>
-              </>
-            ) : (
-              <>
-                {canEditProfile && (
-                  <Button 
-                    type="button" 
-                    onClick={() => setIsEditing(true)}
-                  >
-                    Edit Profile
-                  </Button>
-                )}
-              </>
-            )}
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="name">Full Name</Label>
+        <Input
+          id="name"
+          name="name"
+          value={formData.name}
+          onChange={handleInputChange}
+          disabled={!isEditing || isLoading}
+          required
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="email">Email Address</Label>
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          value={formData.email}
+          disabled={true} // Email can't be changed
+          required
+        />
+        <p className="text-xs text-muted-foreground">
+          Email cannot be changed
+        </p>
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="phone">Phone Number</Label>
+        <Input
+          id="phone"
+          name="phone"
+          value={formData.phone || ""}
+          onChange={handleInputChange}
+          disabled={!isEditing || isLoading}
+          placeholder="Enter your phone number"
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="role">Role</Label>
+        <Input
+          id="role"
+          name="role"
+          value={formData.role}
+          disabled={true} // Role can't be changed by user
+          required
+        />
+        <p className="text-xs text-muted-foreground">
+          Only administrators can change roles
+        </p>
+      </div>
+      
+      <div className="flex justify-end space-x-2 pt-4">
+        {isEditing ? (
+          <>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setIsEditing(false)}
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button 
+              type="button" 
+              onClick={() => setIsEditing(true)}
+            >
+              Edit Profile
+            </Button>
+          </>
+        )}
+      </div>
+    </form>
   );
 };
 

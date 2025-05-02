@@ -9,8 +9,9 @@ export interface User {
   email: string;
   name: string;
   role: UserRole;
-  createdAt: Date;
   phone?: string; // Added phone property as optional
+  createdAt: Date;
+  updatedAt?: Date;
 }
 
 // Define the context type
@@ -21,6 +22,7 @@ export interface AuthContextType {
   register: (email: string, password: string, name: string) => Promise<User>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  reloadUser: () => Promise<void>; // Add method to reload user data
   isAuthenticated: boolean;
   hasRole: (roles: UserRole[]) => boolean;
 }
