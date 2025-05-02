@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,64 +13,25 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
-
-// Mock ticket data
-const initialTickets = [
-  {
-    id: "TICK-001",
-    projectId: "PRJ-001",
-    projectName: "Website Redesign",
-    title: "Homepage Layout Issue",
-    status: "open" as "open" | "in-progress" | "resolved" | "closed",
-    assignedTo: "John Doe",
-    createdAt: "2024-05-01",
-    priority: "high",
-  },
-  {
-    id: "TICK-002",
-    projectId: "PRJ-001",
-    projectName: "Website Redesign",
-    title: "Contact Form Not Working",
-    status: "in-progress" as "open" | "in-progress" | "resolved" | "closed",
-    assignedTo: "Jane Smith",
-    createdAt: "2024-05-02",
-    priority: "high",
-  },
-  {
-    id: "TICK-003",
-    projectId: "PRJ-002",
-    projectName: "SEO Campaign",
-    title: "Meta Tags Update",
-    status: "resolved" as "open" | "in-progress" | "resolved" | "closed",
-    assignedTo: "Alex Johnson",
-    createdAt: "2024-04-28",
-    priority: "medium",
-  },
-  {
-    id: "TICK-004",
-    projectId: "PRJ-002",
-    projectName: "SEO Campaign",
-    title: "Keyword Research",
-    status: "closed" as "open" | "in-progress" | "resolved" | "closed",
-    assignedTo: "Sarah Williams",
-    createdAt: "2024-04-15",
-    priority: "low",
-  },
-];
+import { getCollection, createDocument, updateDocument } from "@/firebase/firestore";
+import { useAuth } from "@/contexts/AuthContext";
+import { AlertTriangle, Loader } from "lucide-react";
 
 interface Ticket {
   id: string;
   projectId: string;
-  projectName: string;
+  projectName?: string;
   title: string;
   status: "open" | "in-progress" | "resolved" | "closed";
   assignedTo: string;
-  createdAt: string;
+  createdAt: any; // Firestore timestamp
   priority: string;
 }
 
 const TicketComponent = () => {
-  const [tickets, setTickets] = useState<Ticket[]>(initialTickets);
+  const { currentUser } = useAuth();
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     projectId: "",
     title: "",
@@ -78,28 +40,102 @@ const TicketComponent = () => {
   });
   const [filter, setFilter] = useState("all");
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Fetch tickets
+        const fetchedTickets = await getCollection('tickets');
+        
+        // Fetch projects to get project names
+        const fetchedProjects = await getCollection('projects');
+        setProjects(fetchedProjects);
+        
+        // Enhance tickets with project names
+        const enhancedTickets = fetchedTickets.map(ticket => {
+          const relatedProject = fetchedProjects.find(project => project.id === ticket.projectId);
+          return {
+            ...ticket,
+            projectName: relatedProject?.name || 'Unknown Project'
+          };
+        });
+        
+        setTickets(enhancedTickets);
+      } catch (err) {
+        console.error("Error fetching ticket data:", err);
+        setError("Failed to load tickets. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [currentUser]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!currentUser) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to create a ticket",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    const newTicket: Ticket = {
-      id: `TICK-${Math.floor(Math.random() * 1000)}`,
-      projectId: formData.projectId,
-      projectName: "Related Project Name", // You might want to fetch this from project data
-      title: formData.title,
-      status: "open",
-      assignedTo: formData.assignedTo,
-      createdAt: new Date().toISOString().split("T")[0],
-      priority: formData.priority,
-    } as Ticket;
+    try {
+      // Find the project to ensure it exists
+      const projectExists = projects.find(project => project.id === formData.projectId);
+      
+      if (!projectExists) {
+        toast({
+          title: "Error",
+          description: "Invalid project ID. Please select a valid project.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    setTickets([...tickets, newTicket]);
-    resetForm();
+      const newTicket = {
+        projectId: formData.projectId,
+        title: formData.title,
+        status: "open" as "open" | "in-progress" | "resolved" | "closed",
+        assignedTo: formData.assignedTo,
+        priority: formData.priority,
+        createdBy: currentUser.id,
+        createdAt: new Date(), // Will be converted to Firestore timestamp
+      };
 
-    toast({
-      title: "Ticket Created",
-      description: `New ticket "${formData.title}" has been created.`,
-    });
+      // Create ticket in Firestore
+      const createdTicket = await createDocument('tickets', newTicket);
+      
+      // Add to local state with project name
+      const ticketWithProject = {
+        ...createdTicket,
+        projectName: projectExists.name
+      };
+      
+      setTickets([...tickets, ticketWithProject as Ticket]);
+      resetForm();
+
+      toast({
+        title: "Ticket Created",
+        description: `New ticket "${formData.title}" has been created.`,
+      });
+    } catch (err) {
+      console.error("Error creating ticket:", err);
+      toast({
+        title: "Error",
+        description: "Failed to create ticket. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const resetForm = () => {
@@ -111,17 +147,33 @@ const TicketComponent = () => {
     });
   };
 
-  const handleStatusChange = (ticketId: string, newStatus: Ticket["status"]) => {
-    setTickets(
-      tickets.map(ticket =>
-        ticket.id === ticketId ? { ...ticket, status: newStatus } : ticket
-      )
-    );
+  const handleStatusChange = async (ticketId: string, newStatus: Ticket["status"]) => {
+    try {
+      // Update in Firestore
+      await updateDocument('tickets', ticketId, { 
+        status: newStatus,
+        updatedAt: new Date()
+      });
+      
+      // Update local state
+      setTickets(
+        tickets.map(ticket =>
+          ticket.id === ticketId ? { ...ticket, status: newStatus } : ticket
+        )
+      );
 
-    toast({
-      title: "Ticket Updated",
-      description: `Ticket status has been updated.`,
-    });
+      toast({
+        title: "Ticket Updated",
+        description: `Ticket status has been updated to ${newStatus}.`,
+      });
+    } catch (err) {
+      console.error("Error updating ticket:", err);
+      toast({
+        title: "Error",
+        description: "Failed to update ticket status. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const filterTickets = () => {
@@ -147,6 +199,19 @@ const TicketComponent = () => {
           Manage and track support tickets for projects.
         </p>
       </div>
+      
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <AlertTriangle className="h-5 w-5 text-red-400" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-6 md:grid-cols-12">
         {/* Ticket Form */}
@@ -160,14 +225,21 @@ const TicketComponent = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="projectId">Project ID</Label>
-                <Input
+                <Label htmlFor="projectId">Project</Label>
+                <select
                   id="projectId"
+                  className="w-full p-2 border border-gray-300 rounded"
                   value={formData.projectId}
                   onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
                   required
-                  placeholder="Enter project ID"
-                />
+                >
+                  <option value="">Select a project</option>
+                  {projects.map(project => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="space-y-2">
@@ -240,51 +312,65 @@ const TicketComponent = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Ticket</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Assigned To</TableHead>
-                    <TableHead>Priority</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filterTickets().map((ticket) => (
-                    <TableRow key={ticket.id}>
-                      <TableCell>
-                        <div className="font-medium">{ticket.title}</div>
-                        <div className="text-sm text-muted-foreground">{ticket.projectName}</div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Created: {new Date(ticket.createdAt).toLocaleDateString()}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className={getStatusBadgeColor(ticket.status)}>
-                          {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
-                        </span>
-                      </TableCell>
-                      <TableCell>{ticket.assignedTo}</TableCell>
-                      <TableCell>{ticket.priority}</TableCell>
-                      <TableCell>
-                        <select
-                          className="border border-gray-300 rounded p-1"
-                          value={ticket.status}
-                          onChange={(e) => handleStatusChange(ticket.id, e.target.value as Ticket["status"])}
-                        >
-                          <option value="open">Open</option>
-                          <option value="in-progress">In Progress</option>
-                          <option value="resolved">Resolved</option>
-                          <option value="closed">Closed</option>
-                        </select>
-                      </TableCell>
+            {isLoading ? (
+              <div className="flex justify-center items-center h-40">
+                <Loader className="h-8 w-8 animate-spin text-bnkis-primary" />
+              </div>
+            ) : filterTickets().length > 0 ? (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Ticket</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Assigned To</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filterTickets().map((ticket) => (
+                      <TableRow key={ticket.id}>
+                        <TableCell>
+                          <div className="font-medium">{ticket.title}</div>
+                          <div className="text-sm text-muted-foreground">{ticket.projectName}</div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Created: {ticket.createdAt ? new Date(ticket.createdAt.seconds * 1000).toLocaleDateString() : 'Unknown date'}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className={getStatusBadgeColor(ticket.status)}>
+                            {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
+                          </span>
+                        </TableCell>
+                        <TableCell>{ticket.assignedTo || 'Unassigned'}</TableCell>
+                        <TableCell>{ticket.priority}</TableCell>
+                        <TableCell>
+                          <select
+                            className="border border-gray-300 rounded p-1"
+                            value={ticket.status}
+                            onChange={(e) => handleStatusChange(ticket.id, e.target.value as Ticket["status"])}
+                          >
+                            <option value="open">Open</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="resolved">Resolved</option>
+                            <option value="closed">Closed</option>
+                          </select>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="text-center py-10">
+                <p className="text-gray-500">No tickets found</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  {filter !== 'all' ? 'Try changing your filter or ' : ''}
+                  Create a new ticket to get started
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
