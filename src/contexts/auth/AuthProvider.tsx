@@ -247,6 +247,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Reload user data function
+  const reloadUser = async (): Promise<void> => {
+    try {
+      if (!auth.currentUser) {
+        console.error("No authenticated user found");
+        return;
+      }
+      
+      const userDoc = await getDoc(doc(db, "users", auth.currentUser.uid));
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data() as Omit<User, "id">;
+        setCurrentUser({
+          id: auth.currentUser.uid,
+          ...userData,
+          createdAt: safelyConvertToDate(userData.createdAt)
+        });
+      } else {
+        console.error("User document not found in Firestore");
+      }
+    } catch (error) {
+      console.error("Error reloading user data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to reload user data",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Check if a user has one of the specified roles
   const hasRole = (roles: UserRole[]): boolean => {
     if (!currentUser) return false;
@@ -260,6 +290,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     register,
     logout,
     resetPassword,
+    reloadUser,
     isAuthenticated: !!currentUser,
     hasRole,
   };

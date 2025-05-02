@@ -18,6 +18,9 @@ const AuthContext = createContext<AuthContextType>({
   resetPassword: async () => {
     throw new Error("Not implemented");
   },
+  reloadUser: async () => {
+    throw new Error("Not implemented");
+  },
   isAuthenticated: false,
   hasRole: () => false,
 });
