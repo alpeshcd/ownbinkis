@@ -10,6 +10,7 @@ export interface User {
   name: string;
   role: UserRole;
   createdAt: Date;
+  phone?: string; // Added phone property as optional
 }
 
 // Define the context type
