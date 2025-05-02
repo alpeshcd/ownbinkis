@@ -75,14 +75,23 @@
   }
 
   body {
-    @apply bg-bnkis-background text-bnkis-text-primary;
+    @apply bg-bnkis-background text-bnkis-text-primary m-0 p-0 w-full;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Fix for page container */
+  html, body, #root {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
   }
 }
 
 @layer components {
   .bnkis-layout {
-    @apply min-h-screen flex flex-col;
+    @apply min-h-screen flex flex-col w-full;
   }
   
   .bnkis-header {
@@ -90,7 +99,7 @@
   }
 
   .bnkis-main {
-    @apply flex flex-1;
+    @apply flex flex-1 pt-16;
   }
   
   .bnkis-sidebar {
@@ -102,7 +111,7 @@
   }
   
   .bnkis-content {
-    @apply flex-1 overflow-x-hidden p-6;
+    @apply flex-1 p-6 overflow-x-hidden;
   }
   
   .bnkis-card {
@@ -115,5 +124,10 @@
   
   .bnkis-nav-item-active {
     @apply bg-bnkis-primary bg-opacity-10 text-bnkis-primary;
+  }
+  
+  /* Page content container */
+  .page-container {
+    @apply w-full p-6;
   }
 }

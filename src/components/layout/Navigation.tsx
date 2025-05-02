@@ -125,7 +125,7 @@ export const Navigation = () => {
 
   return (
     <>
-      {/* Top Navigation Bar */}
+      {/* Top Navigation Bar - Fixed */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-bnkis-primary flex items-center justify-between px-4 z-50">
         <div className="flex items-center">
           <Button 
@@ -146,10 +146,10 @@ export const Navigation = () => {
                 <Avatar className="h-8 w-8 mr-2">
                   <AvatarImage src="" />
                   <AvatarFallback className="bg-bnkis-primary-light text-white">
-                    {currentUser.name.substring(0, 2).toUpperCase()}
+                    {currentUser.name ? currentUser.name.substring(0, 2).toUpperCase() : 'US'}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-white hidden md:inline">{currentUser.name}</span>
+                <span className="text-white hidden md:inline">{currentUser.name || 'User'}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -171,14 +171,14 @@ export const Navigation = () => {
         </div>
       </header>
 
-      {/* Sidebar Navigation */}
+      {/* Sidebar Navigation - Fixed */}
       <aside 
         className={cn(
-          "fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transition-all duration-300 z-40",
+          "fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transition-all duration-300 z-40 overflow-y-auto",
           sidebarOpen ? "w-64" : "w-16"
         )}
       >
-        <nav className="flex flex-col h-full py-4 overflow-y-auto">
+        <nav className="flex flex-col h-full py-4">
           {navItems.map((item) => {
             // Check if user has permission for this item
             if (!hasRole(item.roles as any[])) return null;
@@ -212,12 +212,14 @@ export const Navigation = () => {
         </nav>
       </aside>
 
-      {/* Main content padding to avoid overlap with header and sidebar */}
-      <div className={cn(
-        "pt-16 min-h-screen transition-all duration-300",
-        sidebarOpen ? "ml-64" : "ml-16"
-      )}>
-        {/* This is just a spacer div, content will be rendered in the App.tsx layout */}
+      {/* Main content wrapper with proper spacing */}
+      <div 
+        className={cn(
+          "main-content pt-16",
+          sidebarOpen ? "sidebar-expanded" : "sidebar-collapsed"
+        )}
+      >
+        {/* Content will be rendered in the App.tsx layout */}
       </div>
     </>
   );
