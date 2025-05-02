@@ -178,7 +178,7 @@ export const Navigation = () => {
           sidebarOpen ? "w-64" : "w-16"
         )}
       >
-        <nav className="flex flex-col h-full py-4">
+        <nav className="flex flex-col h-full py-4 overflow-y-auto">
           {navItems.map((item) => {
             // Check if user has permission for this item
             if (!hasRole(item.roles as any[])) return null;
@@ -211,6 +211,14 @@ export const Navigation = () => {
           })}
         </nav>
       </aside>
+
+      {/* Main content padding to avoid overlap with header and sidebar */}
+      <div className={cn(
+        "pt-16 min-h-screen transition-all duration-300",
+        sidebarOpen ? "ml-64" : "ml-16"
+      )}>
+        {/* This is just a spacer div, content will be rendered in the App.tsx layout */}
+      </div>
     </>
   );
 };

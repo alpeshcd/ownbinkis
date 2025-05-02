@@ -11,6 +11,7 @@ import { useProject } from "@/contexts/ProjectContext";
 import { useAuth } from "@/contexts/auth";
 import { ProjectStatus } from "@/types/project";
 import { Skeleton } from "@/components/ui/skeleton";
+import PaginationControl from "@/components/common/Pagination";
 
 const ProjectList: React.FC = () => {
   const navigate = useNavigate();
@@ -21,6 +22,10 @@ const ProjectList: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string | ProjectStatus>("all");
   const [filteredProjects, setFilteredProjects] = useState(projects);
   const [activeTab, setActiveTab] = useState("all");
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   // Filter projects based on search term and status
   useEffect(() => {
@@ -48,10 +53,21 @@ const ProjectList: React.FC = () => {
     }
     
     setFilteredProjects(result);
+    setCurrentPage(1); // Reset to first page when filters change
   }, [projects, searchTerm, statusFilter, activeTab, currentUser]);
 
   const handleCreateProject = () => {
     navigate("/projects/new");
+  };
+  
+  // Calculate pagination values
+  const totalPages = Math.ceil(filteredProjects.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedProjects = filteredProjects.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo(0, 0); // Scroll to top when page changes
   };
   
   const isLoading = loading && projects.length === 0;
@@ -146,11 +162,24 @@ const ProjectList: React.FC = () => {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {paginatedProjects.map((project) => (
+              <ProjectCard key={project.id} project={project} />
+            ))}
+          </div>
+          
+          {/* Pagination control */}
+          {filteredProjects.length > ITEMS_PER_PAGE && (
+            <div className="flex justify-center mt-8">
+              <PaginationControl
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   );

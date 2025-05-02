@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +15,9 @@ import { useToast } from "@/components/ui/use-toast";
 import { getCollection, createDocument, updateDocument, deleteDocument } from "@/firebase/firestore";
 import { auth } from "@/firebase/auth";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { useAuth, UserRole } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { UserRole } from "@/contexts/auth/types";
+import PaginationControl from "@/components/common/Pagination";
 
 interface User {
   id: string;
@@ -39,6 +40,11 @@ const UserManagement = () => {
   });
   const { toast } = useToast();
   const { currentUser } = useAuth();
+  
+  // Search and pagination
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     fetchUsers();
@@ -185,6 +191,23 @@ const UserManagement = () => {
     setIsEditing(false);
   };
 
+  // Filter users based on search term
+  const filteredUsers = users.filter(
+    (user) =>
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.role.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  // Calculate pagination values
+  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   // Format date for display
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("en-US", {
@@ -201,6 +224,15 @@ const UserManagement = () => {
         <p className="text-muted-foreground">
           Add, edit, and manage user accounts in the system.
         </p>
+      </div>
+      
+      <div className="mb-4">
+        <Input
+          placeholder="Search users..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="max-w-sm"
+        />
       </div>
       
       <div className="grid gap-6 md:grid-cols-2">
@@ -305,14 +337,14 @@ const UserManagement = () => {
                         Loading users...
                       </TableCell>
                     </TableRow>
-                  ) : users.length === 0 ? (
+                  ) : filteredUsers.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={4} className="h-24 text-center">
                         No users found.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    users.map((user) => (
+                    paginatedUsers.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell>
                           <div className="font-medium">{user.name}</div>
@@ -362,6 +394,17 @@ const UserManagement = () => {
                 </TableBody>
               </Table>
             </div>
+            
+            {/* Pagination control */}
+            {filteredUsers.length > ITEMS_PER_PAGE && (
+              <div className="flex justify-center mt-4">
+                <PaginationControl
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +30,7 @@ import { UserRole, useAuth } from "@/contexts/AuthContext";
 import { getCollection, createDocument, updateDocument, deleteDocument } from "@/firebase/firestore";
 import { auth } from "@/firebase/auth";
 import { createUserWithEmailAndPassword } from "firebase/auth";
+import PaginationControl from "@/components/common/Pagination";
 
 interface User {
   id: string;
@@ -49,6 +49,10 @@ const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
   const { currentUser } = useAuth();
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   // New user form data
   const [newUser, setNewUser] = useState({
@@ -237,6 +241,16 @@ const UserManagement = () => {
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  
+  // Calculate pagination values
+  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo(0, 0);
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 pt-20 sm:pt-24">
@@ -356,7 +370,7 @@ const UserManagement = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredUsers.map((user) => (
+              paginatedUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
@@ -508,6 +522,17 @@ const UserManagement = () => {
           </TableBody>
         </Table>
       </div>
+      
+      {/* Pagination control */}
+      {filteredUsers.length > ITEMS_PER_PAGE && (
+        <div className="flex justify-center mt-8">
+          <PaginationControl
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      )}
     </div>
   );
 };
