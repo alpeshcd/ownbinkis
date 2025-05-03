@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,7 +26,7 @@ import { UserManagement, Reports, DatabaseInitializer } from "@/modules/admin";
 import { InvoiceComponent, PaymentComponent } from "@/modules/finance";
 
 // Supervisor Module
-import { FinancialRequestComponent } from "@/modules/supervisor";
+import { FinancialRequestComponent, TicketComponent } from "@/modules/supervisor";
 
 // Project Module
 import { ProjectList, ProjectDetail, NewProject } from "@/modules/projects";
@@ -144,6 +145,18 @@ const App = () => (
                       requiredRoles={["admin", "supervisor", "finance"]}
                     >
                       <FinancialRequestComponent />
+                    </PrivateRoute>
+                  }
+                />
+
+                {/* Added Ticket Route */}
+                <Route
+                  path="/tickets"
+                  element={
+                    <PrivateRoute
+                      requiredRoles={["admin", "supervisor", "finance", "user", "vendor"]}
+                    >
+                      <TicketComponent />
                     </PrivateRoute>
                   }
                 />

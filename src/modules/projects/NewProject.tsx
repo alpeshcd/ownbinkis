@@ -7,6 +7,7 @@ import { useProject } from "@/contexts/ProjectContext";
 import { ProjectForm } from "./components/ProjectForm";
 import { getCollection } from "@/firebase/firestore";
 import { UserRole } from "@/contexts/auth";
+import { toast } from "@/components/ui/use-toast";
 
 const NewProject: React.FC = () => {
   const navigate = useNavigate();
@@ -30,6 +31,11 @@ const NewProject: React.FC = () => {
         setUsers(formattedUsers);
       } catch (error) {
         console.error("Error fetching users:", error);
+        toast({
+          title: "Error",
+          description: "Could not load users. Please try again.",
+          variant: "destructive",
+        });
       } finally {
         setLoadingUsers(false);
       }
@@ -39,10 +45,31 @@ const NewProject: React.FC = () => {
   }, []);
   
   const handleSubmit = async (data: any) => {
-    const newProject = await createNewProject(data);
-    
-    if (newProject) {
-      navigate(`/projects/${newProject.id}`);
+    try {
+      const newProject = await createNewProject(data);
+      
+      if (newProject && newProject.id) {
+        console.log("Project created successfully:", newProject);
+        toast({
+          title: "Success",
+          description: "Project created successfully!",
+        });
+        navigate(`/projects/${newProject.id}`);
+      } else {
+        console.error("Project creation failed - no project ID returned");
+        toast({
+          title: "Error",
+          description: "Failed to create project. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error during project creation:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create project. Please try again.",
+        variant: "destructive",
+      });
     }
   };
   

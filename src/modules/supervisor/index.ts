@@ -1,7 +1,6 @@
 
-// Supervisor module exports
-import ProjectManagement from "./ProjectManagement";
-import TicketComponent from "./TicketComponent";
 import FinancialRequestComponent from "./FinancialRequestComponent";
+import TicketComponent from "./TicketComponent";
+import ProjectManagement from "./ProjectManagement";
 
-export { ProjectManagement, TicketComponent, FinancialRequestComponent };
+export { FinancialRequestComponent, TicketComponent, ProjectManagement };
