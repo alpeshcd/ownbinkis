@@ -1,15 +1,39 @@
-
 import React from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -24,7 +48,6 @@ const projectSchema = z.object({
   priority: z.enum(["low", "medium", "high"] as const),
   startDate: z.date(),
   endDate: z.date().optional(),
-  budget: z.coerce.number().optional(),
   supervisor: z.string().min(1, "Project supervisor is required"),
   team: z.array(z.string()).optional(),
 });
@@ -36,15 +59,15 @@ interface ProjectFormProps {
   onSubmit: (data: ProjectFormValues) => void;
   onCancel: () => void;
   loading: boolean;
-  availableUsers: Array<{ id: string; name: string; }>;
+  availableUsers: Array<{ id: string; name: string }>;
 }
 
-export const ProjectForm: React.FC<ProjectFormProps> = ({ 
-  initialData, 
-  onSubmit, 
-  onCancel, 
+export const ProjectForm: React.FC<ProjectFormProps> = ({
+  initialData,
+  onSubmit,
+  onCancel,
   loading,
-  availableUsers
+  availableUsers,
 }) => {
   // Set up form with react-hook-form and zod
   const form = useForm<ProjectFormValues>({
@@ -56,7 +79,6 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
       priority: (initialData?.priority as ProjectPriority) || "medium",
       startDate: initialData?.startDate || new Date(),
       endDate: initialData?.endDate,
-      budget: initialData?.budget,
       supervisor: initialData?.supervisor || "",
       team: initialData?.team || [],
     },
@@ -65,15 +87,11 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>{initialData ? "Edit Project" : "Create New Project"}</CardTitle>
-        <CardDescription>
-          {initialData 
-            ? "Update the details of your existing project" 
-            : "Fill in the details to create a new project"
-          }
-        </CardDescription>
+        <CardTitle>
+          {initialData ? "Edit Project" : "Create New Project"}
+        </CardTitle>
       </CardHeader>
-      
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardContent className="space-y-4">
@@ -90,7 +108,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="description"
@@ -98,17 +116,17 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Describe the project and its goals" 
+                    <Textarea
+                      placeholder="Describe"
                       className="min-h-32"
-                      {...field} 
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -116,8 +134,8 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
@@ -135,15 +153,15 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="priority"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Priority</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
@@ -162,7 +180,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
                 )}
               />
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -203,7 +221,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="endDate"
@@ -234,125 +252,67 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
                           mode="single"
                           selected={field.value || undefined}
                           onSelect={field.onChange}
-                          disabled={(date) => 
-                            date < new Date("1900-01-01") || 
-                            (form.getValues("startDate") && date < form.getValues("startDate"))
+                          disabled={(date) =>
+                            date < new Date("1900-01-01") ||
+                            (form.getValues("startDate") &&
+                              date < form.getValues("startDate"))
                           }
                           initialFocus
                         />
                       </PopoverContent>
                     </Popover>
-                    <FormDescription>
-                      The expected completion date for the project
-                    </FormDescription>
+
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
-            
-            <FormField
-              control={form.control}
-              name="budget"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Budget (Optional)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      placeholder="Enter project budget" 
-                      {...field}
-                      value={field.value || ''}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    The estimated budget for the project
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
+
             <FormField
               control={form.control}
               name="supervisor"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Supervisor</FormLabel>
-                  <Select 
-                    onValueChange={field.onChange} 
+                  <FormLabel>Vendor</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
                     defaultValue={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a supervisor" />
+                        <SelectValue placeholder="Select a Vendor " />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {availableUsers.map(user => (
+                      {availableUsers.map((user) => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormDescription>
-                    The person who will be responsible for managing this project
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            {/* Multi-select for team members - could be replaced with a more sophisticated component */}
-            <FormField
-              control={form.control}
-              name="team"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Team Members</FormLabel>
-                  <FormControl>
-                    <div className="space-y-2">
-                      {availableUsers.map(user => (
-                        <div key={user.id} className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id={`team-${user.id}`}
-                            checked={field.value?.includes(user.id) ?? false}
-                            onChange={(e) => {
-                              const currentValues = field.value || [];
-                              if (e.target.checked) {
-                                field.onChange([...currentValues, user.id]);
-                              } else {
-                                field.onChange(currentValues.filter(id => id !== user.id));
-                              }
-                            }}
-                          />
-                          <label htmlFor={`team-${user.id}`}>{user.name}</label>
-                        </div>
-                      ))}
-                    </div>
-                  </FormControl>
-                  <FormDescription>
-                    Select the team members who will be working on this project
-                  </FormDescription>
+
                   <FormMessage />
                 </FormItem>
               )}
             />
           </CardContent>
-          
+
           <CardFooter className="flex justify-between">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={onCancel}
               disabled={loading}
             >
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Saving..." : initialData ? "Update Project" : "Create Project"}
+              {loading
+                ? "Saving..."
+                : initialData
+                ? "Update Project"
+                : "Create Project"}
             </Button>
           </CardFooter>
         </form>

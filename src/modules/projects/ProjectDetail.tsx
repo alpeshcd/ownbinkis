@@ -1,27 +1,47 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { 
-  ArrowLeft, 
-  Calendar, 
-  CheckCircle, 
-  Clock, 
-  DollarSign, 
-  Edit, 
-  Loader2, 
-  Plus, 
-  Trash2, 
-  User, 
-  Users 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  ArrowLeft,
+  Calendar,
+  CheckCircle,
+  Clock,
+  DollarSign,
+  Edit,
+  Loader2,
+  Plus,
+  Trash2,
+  User,
+  Users,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useProject } from "@/contexts/ProjectContext";
@@ -35,10 +55,14 @@ import { ProjectForm } from "./components/ProjectForm";
 
 const ProjectDetail: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
+  console.log(
+    projectId,
+    "projectIdprojectIdprojectIdprojectIdprojectIdprojectId"
+  );
   const navigate = useNavigate();
-  const { 
-    selectedProject, 
-    loading, 
+  const {
+    selectedProject,
+    loading,
     fetchProject,
     updateSelectedProject,
     removeProject,
@@ -52,31 +76,32 @@ const ProjectDetail: React.FC = () => {
     addTaskNewComment,
     removeTaskComment,
     uploadTaskAttachment,
-    removeTaskAttachment
+    removeTaskAttachment,
   } = useProject();
-  
+
   const { currentUser, hasRole } = useAuth();
-  
+
   const [isEditProjectDialogOpen, setIsEditProjectDialogOpen] = useState(false);
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
   const [isEditTaskDialogOpen, setIsEditTaskDialogOpen] = useState(false);
-  const [isDeleteProjectDialogOpen, setIsDeleteProjectDialogOpen] = useState(false);
+  const [isDeleteProjectDialogOpen, setIsDeleteProjectDialogOpen] =
+    useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [userNames, setUserNames] = useState<Record<string, string>>({});
-  
-  useEffect(() => {
-    if (projectId) {
-      fetchProject(projectId);
-    }
-  }, [projectId, fetchProject]);
-  
+
+  // useEffect(() => {
+  //   if (projectId) {
+  //     fetchProject(projectId);
+  //   }
+  // }, [projectId, fetchProject]);
+
   // Redirect to projects list if project not found
   useEffect(() => {
     if (!loading && !selectedProject && projectId) {
       navigate("/projects");
     }
   }, [selectedProject, loading, navigate, projectId]);
-  
+
   if (!selectedProject || loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -85,26 +110,30 @@ const ProjectDetail: React.FC = () => {
       </div>
     );
   }
-  
+
   // Calculate project progress
   const calculateProgress = (project: Project) => {
     if (!project.tasks.length) return 0;
-    
-    const completedTasks = project.tasks.filter(task => task.status === "completed").length;
+
+    const completedTasks = project.tasks.filter(
+      (task) => task.status === "completed"
+    ).length;
     return Math.round((completedTasks / project.tasks.length) * 100);
   };
-  
+
   const progress = calculateProgress(selectedProject);
-  
+
   // Check if user can edit this project
-  const canEdit = hasRole(["admin"]) || 
-    selectedProject.supervisor === currentUser?.id || 
+  const canEdit =
+    hasRole(["admin"]) ||
+    selectedProject.supervisor === currentUser?.id ||
     selectedProject.createdBy === currentUser?.id;
-  
+
   // Check if user can add tasks
-  const canAddTasks = hasRole(["admin", "supervisor"]) || 
+  const canAddTasks =
+    hasRole(["admin", "supervisor"]) ||
     selectedProject.supervisor === currentUser?.id;
-  
+
   // Handle status color
   const getStatusColor = (status: ProjectStatus) => {
     switch (status) {
@@ -118,28 +147,33 @@ const ProjectDetail: React.FC = () => {
         return "bg-gray-100 text-gray-800";
     }
   };
-  
+
   const statusClass = getStatusColor(selectedProject.status);
-  
+
   const handleEditProject = (data: Partial<Project>) => {
     updateSelectedProject(data);
     setIsEditProjectDialogOpen(false);
   };
-  
+
   const handleDeleteProject = async () => {
     await removeProject(selectedProject.id);
     navigate("/projects");
   };
-  
-  const handleAddTask = (taskData: Omit<ProjectTask, "id" | "createdAt" | "updatedAt" | "comments" | "attachments">) => {
+
+  const handleAddTask = (
+    taskData: Omit<
+      ProjectTask,
+      "id" | "createdAt" | "updatedAt" | "comments" | "attachments"
+    >
+  ) => {
     addNewTask(taskData);
     setIsAddTaskDialogOpen(false);
   };
-  
+
   const handleEditTask = () => {
     setIsEditTaskDialogOpen(true);
   };
-  
+
   const handleUpdateTask = (taskData: Partial<ProjectTask>) => {
     if (selectedTaskId) {
       updateExistingTask(selectedTaskId, taskData);
@@ -147,59 +181,70 @@ const ProjectDetail: React.FC = () => {
       setSelectedTaskId(null);
     }
   };
-  
+
   const handleTaskStatusChange = (taskId: string, status: ProjectStatus) => {
     updateExistingTask(taskId, { status });
   };
-  
+
   const handleDeleteTask = async (taskId: string) => {
     await removeTask(taskId);
   };
-  
-  const selectedTask = selectedTaskId 
-    ? selectedProject.tasks.find(task => task.id === selectedTaskId) 
+
+  const selectedTask = selectedTaskId
+    ? selectedProject.tasks.find((task) => task.id === selectedTaskId)
     : null;
-  
-  // Get all user IDs involved in the project
-  useEffect(() => {
-    const userIds = new Set<string>();
-    
-    // Add supervisor and team
-    userIds.add(selectedProject.supervisor);
-    selectedProject.team.forEach(id => userIds.add(id));
-    
-    // Add task assignees
-    selectedProject.tasks.forEach(task => {
-      task.assignedTo.forEach(id => userIds.add(id));
-    });
-    
-    // Fetch user names for these IDs
-    // This would be a real API call in a production application
-    // For now, we'll just use placeholder names
-    const names: Record<string, string> = {};
-    Array.from(userIds).forEach(id => {
-      names[id] = `User ${id.substring(0, 4)}`;
-    });
-    
-    setUserNames(names);
-  }, [selectedProject]);
-  
+
+  // // Get all user IDs involved in the project
+  // useEffect(() => {
+  //   if (
+  //     !selectedProject ||
+  //     !selectedProject.supervisor ||
+  //     !Array.isArray(selectedProject.tasks)
+  //   )
+  //     return;
+
+  //   const userIds = new Set<string>();
+
+  //   // Add supervisor and team
+  //   userIds.add(selectedProject.supervisor);
+  //   selectedProject.team?.forEach((id) => userIds.add(id));
+
+  //   // Add task assignees
+  //   selectedProject.tasks?.forEach((task) => {
+  //     task.assignedTo?.forEach((id) => userIds.add(id));
+  //   });
+
+  //   // Simulated user name resolution
+  //   const names: Record<string, string> = {};
+  //   Array.from(userIds).forEach((id) => {
+  //     names[id] = `User ${id.substring(0, 4)}`;
+  //   });
+
+  //   setUserNames(names);
+  // }, [selectedProject]);
+
   // Filter tasks by status for tabs
-  const notStartedTasks = selectedProject.tasks.filter(task => task.status === "not-started");
-  const inProgressTasks = selectedProject.tasks.filter(task => task.status === "in-progress");
-  const completedTasks = selectedProject.tasks.filter(task => task.status === "completed");
-  
+  const notStartedTasks = selectedProject.tasks.filter(
+    (task) => task.status === "not-started"
+  );
+  const inProgressTasks = selectedProject.tasks.filter(
+    (task) => task.status === "in-progress"
+  );
+  const completedTasks = selectedProject.tasks.filter(
+    (task) => task.status === "completed"
+  );
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <Button 
-        variant="ghost" 
-        className="mb-4" 
+      <Button
+        variant="ghost"
+        className="mb-4"
         onClick={() => navigate("/projects")}
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back to Projects
       </Button>
-      
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold">{selectedProject.name}</h1>
@@ -212,17 +257,17 @@ const ProjectDetail: React.FC = () => {
             </span>
           </div>
         </div>
-        
+
         {canEdit && (
           <div className="flex gap-2 mt-4 md:mt-0">
-            <Button 
+            <Button
               variant="outline"
               onClick={() => setIsEditProjectDialogOpen(true)}
             >
               <Edit className="mr-2 h-4 w-4" />
               Edit Project
             </Button>
-            <Button 
+            <Button
               variant="destructive"
               onClick={() => setIsDeleteProjectDialogOpen(true)}
             >
@@ -232,7 +277,7 @@ const ProjectDetail: React.FC = () => {
           </div>
         )}
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <Card className="lg:col-span-2">
           <CardHeader>
@@ -240,47 +285,59 @@ const ProjectDetail: React.FC = () => {
           </CardHeader>
           <CardContent>
             <p>{selectedProject.description}</p>
-            
+
             <div className="mt-6 space-y-6">
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Progress</h3>
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                  Progress
+                </h3>
                 <div className="flex justify-between text-sm mb-1">
                   <span>{progress}% Complete</span>
                   <span>
-                    {completedTasks.length} of {selectedProject.tasks.length} tasks completed
+                    {completedTasks.length} of {selectedProject.tasks.length}{" "}
+                    tasks completed
                   </span>
                 </div>
                 <Progress value={progress} className="h-2" />
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Timeline</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                    Timeline
+                  </h3>
                   <div className="flex items-center">
                     <Calendar className="h-5 w-5 mr-2 text-muted-foreground" />
                     <div>
-                      <div>Start: {format(selectedProject.startDate, "MMM d, yyyy")}</div>
+                      <div>
+                        Start:{" "}
+                        {format(selectedProject.startDate, "MMM d, yyyy")}
+                      </div>
                       {selectedProject.endDate && (
-                        <div>End: {format(selectedProject.endDate, "MMM d, yyyy")}</div>
+                        <div>
+                          End: {format(selectedProject.endDate, "MMM d, yyyy")}
+                        </div>
                       )}
                     </div>
                   </div>
                 </div>
-                
-                {selectedProject.budget && (
+
+                {/* {selectedProject.budget && (
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Budget</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                      Budget
+                    </h3>
                     <div className="flex items-center">
                       <DollarSign className="h-5 w-5 mr-2 text-muted-foreground" />
                       <span>${selectedProject.budget.toLocaleString()}</span>
                     </div>
                   </div>
-                )}
+                )} */}
               </div>
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader>
             <CardTitle>Team</CardTitle>
@@ -288,28 +345,35 @@ const ProjectDetail: React.FC = () => {
           <CardContent>
             <div className="space-y-4">
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Supervisor</h3>
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                  Supervisor
+                </h3>
                 <div className="flex items-center">
                   <Avatar className="h-8 w-8 mr-2">
                     <AvatarFallback>
-                      {userNames[selectedProject.supervisor]?.substring(0, 2) || "??"}
+                      {userNames[selectedProject.supervisor]?.substring(0, 2) ||
+                        "??"}
                     </AvatarFallback>
                   </Avatar>
-                  <span>{userNames[selectedProject.supervisor] || "Unknown"}</span>
+                  <span>
+                    {userNames[selectedProject.supervisor] || "Unknown"}
+                  </span>
                 </div>
               </div>
-              
+
               <Separator />
-              
+
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground mb-2">
                   Team Members ({selectedProject.team.length})
                 </h3>
                 {selectedProject.team.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No team members assigned yet</p>
+                  <p className="text-sm text-muted-foreground">
+                    No team members assigned yet
+                  </p>
                 ) : (
                   <div className="space-y-2">
-                    {selectedProject.team.map(userId => (
+                    {selectedProject.team.map((userId) => (
                       <div key={userId} className="flex items-center">
                         <Avatar className="h-8 w-8 mr-2">
                           <AvatarFallback>
@@ -326,7 +390,7 @@ const ProjectDetail: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-      
+
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold">Tasks</h2>
@@ -337,7 +401,7 @@ const ProjectDetail: React.FC = () => {
             </Button>
           )}
         </div>
-        
+
         <Tabs defaultValue="all">
           <TabsList>
             <TabsTrigger value="all">
@@ -353,7 +417,7 @@ const ProjectDetail: React.FC = () => {
               Completed ({completedTasks.length})
             </TabsTrigger>
           </TabsList>
-          
+
           <div className="mt-6">
             <TabsContent value="all">
               {selectedProject.tasks.length === 0 ? (
@@ -372,7 +436,7 @@ const ProjectDetail: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {selectedProject.tasks.map(task => (
+                  {selectedProject.tasks.map((task) => (
                     <TaskCard
                       key={task.id}
                       task={task}
@@ -381,14 +445,16 @@ const ProjectDetail: React.FC = () => {
                         handleEditTask();
                       }}
                       onDelete={() => handleDeleteTask(task.id)}
-                      onStatusChange={(status) => handleTaskStatusChange(task.id, status)}
+                      onStatusChange={(status) =>
+                        handleTaskStatusChange(task.id, status)
+                      }
                       userNames={userNames}
                     />
                   ))}
                 </div>
               )}
             </TabsContent>
-            
+
             <TabsContent value="not-started">
               {notStartedTasks.length === 0 ? (
                 <div className="text-center py-8 bg-gray-50 rounded-lg">
@@ -396,7 +462,7 @@ const ProjectDetail: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {notStartedTasks.map(task => (
+                  {notStartedTasks.map((task) => (
                     <TaskCard
                       key={task.id}
                       task={task}
@@ -405,14 +471,16 @@ const ProjectDetail: React.FC = () => {
                         handleEditTask();
                       }}
                       onDelete={() => handleDeleteTask(task.id)}
-                      onStatusChange={(status) => handleTaskStatusChange(task.id, status)}
+                      onStatusChange={(status) =>
+                        handleTaskStatusChange(task.id, status)
+                      }
                       userNames={userNames}
                     />
                   ))}
                 </div>
               )}
             </TabsContent>
-            
+
             <TabsContent value="in-progress">
               {inProgressTasks.length === 0 ? (
                 <div className="text-center py-8 bg-gray-50 rounded-lg">
@@ -420,7 +488,7 @@ const ProjectDetail: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {inProgressTasks.map(task => (
+                  {inProgressTasks.map((task) => (
                     <TaskCard
                       key={task.id}
                       task={task}
@@ -429,14 +497,16 @@ const ProjectDetail: React.FC = () => {
                         handleEditTask();
                       }}
                       onDelete={() => handleDeleteTask(task.id)}
-                      onStatusChange={(status) => handleTaskStatusChange(task.id, status)}
+                      onStatusChange={(status) =>
+                        handleTaskStatusChange(task.id, status)
+                      }
                       userNames={userNames}
                     />
                   ))}
                 </div>
               )}
             </TabsContent>
-            
+
             <TabsContent value="completed">
               {completedTasks.length === 0 ? (
                 <div className="text-center py-8 bg-gray-50 rounded-lg">
@@ -444,7 +514,7 @@ const ProjectDetail: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {completedTasks.map(task => (
+                  {completedTasks.map((task) => (
                     <TaskCard
                       key={task.id}
                       task={task}
@@ -453,7 +523,9 @@ const ProjectDetail: React.FC = () => {
                         handleEditTask();
                       }}
                       onDelete={() => handleDeleteTask(task.id)}
-                      onStatusChange={(status) => handleTaskStatusChange(task.id, status)}
+                      onStatusChange={(status) =>
+                        handleTaskStatusChange(task.id, status)
+                      }
                       userNames={userNames}
                     />
                   ))}
@@ -463,7 +535,7 @@ const ProjectDetail: React.FC = () => {
           </div>
         </Tabs>
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <AttachmentsList
           attachments={selectedProject.attachments}
@@ -471,7 +543,7 @@ const ProjectDetail: React.FC = () => {
           onDelete={(attachmentId) => removeAttachment(attachmentId)}
           loading={loading}
         />
-        
+
         <CommentSection
           comments={selectedProject.comments}
           onAddComment={(content) => addComment(content)}
@@ -479,10 +551,10 @@ const ProjectDetail: React.FC = () => {
           loading={loading}
         />
       </div>
-      
+
       {/* Edit Project Dialog */}
-      <Dialog 
-        open={isEditProjectDialogOpen} 
+      <Dialog
+        open={isEditProjectDialogOpen}
         onOpenChange={setIsEditProjectDialogOpen}
       >
         <DialogContent className="max-w-3xl">
@@ -494,16 +566,16 @@ const ProjectDetail: React.FC = () => {
             onSubmit={handleEditProject}
             onCancel={() => setIsEditProjectDialogOpen(false)}
             loading={loading}
-            availableUsers={Object.entries(userNames).map(([id, name]) => ({ id, name }))}
+            availableUsers={Object.entries(userNames).map(([id, name]) => ({
+              id,
+              name,
+            }))}
           />
         </DialogContent>
       </Dialog>
-      
+
       {/* Add Task Dialog */}
-      <Dialog 
-        open={isAddTaskDialogOpen} 
-        onOpenChange={setIsAddTaskDialogOpen}
-      >
+      <Dialog open={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Add New Task</DialogTitle>
@@ -512,14 +584,17 @@ const ProjectDetail: React.FC = () => {
             onSubmit={handleAddTask}
             onCancel={() => setIsAddTaskDialogOpen(false)}
             loading={loading}
-            availableUsers={Object.entries(userNames).map(([id, name]) => ({ id, name }))}
+            availableUsers={Object.entries(userNames).map(([id, name]) => ({
+              id,
+              name,
+            }))}
           />
         </DialogContent>
       </Dialog>
-      
+
       {/* Edit Task Dialog */}
-      <Dialog 
-        open={isEditTaskDialogOpen} 
+      <Dialog
+        open={isEditTaskDialogOpen}
         onOpenChange={setIsEditTaskDialogOpen}
       >
         <DialogContent className="max-w-3xl">
@@ -534,11 +609,14 @@ const ProjectDetail: React.FC = () => {
               setSelectedTaskId(null);
             }}
             loading={loading}
-            availableUsers={Object.entries(userNames).map(([id, name]) => ({ id, name }))}
+            availableUsers={Object.entries(userNames).map(([id, name]) => ({
+              id,
+              name,
+            }))}
           />
         </DialogContent>
       </Dialog>
-      
+
       {/* Delete Project Confirmation Dialog */}
       <AlertDialog
         open={isDeleteProjectDialogOpen}
@@ -546,14 +624,17 @@ const ProjectDetail: React.FC = () => {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to delete this project?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Are you sure you want to delete this project?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. All tasks, comments, and attachments associated with this project will be permanently deleted.
+              This action cannot be undone. All tasks, comments, and attachments
+              associated with this project will be permanently deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleDeleteProject}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >

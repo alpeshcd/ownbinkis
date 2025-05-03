@@ -45,7 +45,6 @@ export interface Project {
   priority: ProjectPriority;
   startDate: Date;
   endDate: Date;
-  budget?: number;
   supervisor: string;
   team: string[];
   createdBy: string;
