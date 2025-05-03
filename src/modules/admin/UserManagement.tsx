@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Modal } from "antd";
+
 import {
   Card,
   CardContent,
@@ -24,8 +26,6 @@ import {
   updateDocument,
   deleteDocument,
 } from "@/firebase/firestore";
-import { auth } from "@/firebase/auth";
-import { createUserWithEmailAndPassword } from "firebase/auth";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserRole } from "@/contexts/auth/types";
 import PaginationControl from "@/components/common/Pagination";
@@ -69,17 +69,17 @@ const UserManagement = () => {
       setLoading(true);
       const usersData = await getCollection("users");
 
-      const formattedUsers = usersData.map((user) => ({
+      const formattedUsers = usersData.map((user: any) => ({
         id: user.id,
         name: user.name || "",
         email: user.email || "",
         role: (user.role || "user") as UserRole,
         createdAt:
-        user.createdAt && user.createdAt.seconds
-          ? new Date(user.createdAt.seconds * 1000)
-          : user.createdAt instanceof Date
-          ? user.createdAt
-          : new Date(), // fallback if missing or malformed
+          user.createdAt && user.createdAt.seconds
+            ? new Date(user.createdAt.seconds * 1000)
+            : user.createdAt instanceof Date
+            ? user.createdAt
+            : new Date(),
       }));
 
       setUsers(formattedUsers);
@@ -106,15 +106,23 @@ const UserManagement = () => {
     setIsEditing(true);
   };
 
+  const confirmDelete = (userId: string) => {
+    Modal.confirm({
+      title: "Are you sure?",
+      content: "This action will delete the user permanently.",
+      okText: "Delete",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk: () => handleDelete(userId),
+    });
+  };
   const handleDelete = async (userId: string) => {
-    if (!window.confirm("Are you sure you want to delete this user?")) {
-      return;
-    }
-
     try {
       await deleteDocument("users", userId);
       setUsers(users.filter((u) => u.id !== userId));
       toast({
+        variant: "success",
+
         title: "User Deleted",
         description: "User has been successfully deleted.",
       });
@@ -133,7 +141,6 @@ const UserManagement = () => {
 
     try {
       if (isEditing && selectedUser) {
-        // Update existing user - only update name and role
         const userData = {
           name: formData.name,
           role: formData.role as UserRole,
@@ -148,39 +155,37 @@ const UserManagement = () => {
         );
 
         toast({
+          variant: "success",
+
           title: "User Updated",
           description: "User has been successfully updated.",
         });
       } else {
-        // Add new user - use admin SDK instead of client-side auth
         try {
-          // Create the user document in Firestore first
           const userData = {
             name: formData.name,
             email: formData.email,
             role: formData.role as UserRole,
-            createdAt: serverTimestamp(), // Use Firebase server timestamp
+            createdAt: serverTimestamp(),
           };
 
-          // Generate a unique ID or use a utility function
           const newDocRef = doc(collection(db, "users"));
           const newUserId = newDocRef.id;
 
-          // Create the user document with the generated ID
           await setDoc(newDocRef, userData);
 
-          // Add to local state with client-side date for immediate UI display
           const newUser: User = {
             id: newUserId,
             ...userData,
-            createdAt: new Date(), // Use client-side date for immediate UI display
+            createdAt: new Date(),
           };
 
-          setUsers([...users, newUser]);
+          setUsers([newUser, ...users]);
 
           toast({
-            title: "User Created",
+            title: "✅ User Created",
             description: "New user has been successfully created.",
+            variant: "default", // optional
           });
         } catch (error: any) {
           console.error("Error creating user:", error);
@@ -291,7 +296,7 @@ const UserManagement = () => {
                     setFormData({ ...formData, email: e.target.value })
                   }
                   required
-                  disabled={isEditing} // Can't change email for existing users
+                  disabled={isEditing}
                 />
               </div>
 
@@ -344,7 +349,7 @@ const UserManagement = () => {
         </Card>
 
         {/* Users List */}
-        <Card>
+        <Card className="mt-4">
           <CardHeader>
             <CardTitle>User Accounts</CardTitle>
           </CardHeader>
@@ -374,7 +379,7 @@ const UserManagement = () => {
                     </TableRow>
                   ) : (
                     paginatedUsers.map((user) => {
-                      console.log("User:", user); // 🔍 Debug log for each user
+                      console.log("User:", user);
 
                       return (
                         <TableRow key={user.id}>
@@ -419,7 +424,7 @@ const UserManagement = () => {
                               <Button
                                 variant="destructive"
                                 size="sm"
-                                onClick={() => handleDelete(user.id)}
+                                onClick={() => confirmDelete(user.id)}
                                 disabled={currentUser?.id === user.id}
                               >
                                 Delete
@@ -436,7 +441,7 @@ const UserManagement = () => {
 
             {/* Pagination control */}
             {filteredUsers.length > ITEMS_PER_PAGE && (
-              <div className="flex justify-center mt-4">
+              <div className="flex justify-center mt-4 cursor-pointer">
                 <PaginationControl
                   currentPage={currentPage}
                   totalPages={totalPages}

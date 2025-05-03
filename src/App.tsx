@@ -1,44 +1,21 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/auth";
 import { ProjectProvider } from "@/contexts/ProjectContext";
 import { Navigation } from "@/components/layout/Navigation";
 import { PrivateRoute } from "@/components/auth/PrivateRoute";
-
-// Auth Module
 import { Login, Register, ForgotPassword } from "@/modules/auth";
-
-// Common Module
-import { Dashboard, Unauthorized } from "@/modules/common";
-import Settings from "@/modules/common/Settings";
-
-// User Module
+import {  Unauthorized } from "@/modules/common";
 import { Profile } from "@/modules/user";
-
-// Admin Module
-import { UserManagement, Reports, DatabaseInitializer } from "@/modules/admin";
-
-// Finance Module
-import { InvoiceComponent, PaymentComponent } from "@/modules/finance";
-
-// Supervisor Module
-import { FinancialRequestComponent, TicketComponent } from "@/modules/supervisor";
-
-// Project Module
+import { UserManagement } from "@/modules/admin";
 import { ProjectList, ProjectDetail, NewProject } from "@/modules/projects";
-
-// Vendor Module
-import { VendorDirectory, BillingComponent } from "@/modules/vendor";
-
-// AI Module
-import { AIInsights } from "@/modules/ai";
-
+import { VendorDirectory } from "@/modules/vendor";
 import NotFound from "./pages/NotFound";
 import "./App.css";
+import TicketComponent from "./modules/supervisor/TicketComponent";
 
 const queryClient = new QueryClient();
 
@@ -60,7 +37,6 @@ const App = () => (
                 <Route path="/unauthorized" element={<Unauthorized />} />
 
                 {/* Protected Routes */}
-                
 
                 <Route
                   path="/profile"
@@ -71,40 +47,12 @@ const App = () => (
                   }
                 />
 
-                {/* Settings Route */}
-                <Route
-                  path="/settings"
-                  element={
-                    <PrivateRoute>
-                      <Settings />
-                    </PrivateRoute>
-                  }
-                />
-
                 {/* Admin Routes */}
                 <Route
                   path="/"
                   element={
                     <PrivateRoute requiredRoles={["admin"]}>
                       <UserManagement />
-                    </PrivateRoute>
-                  }
-                />
-
-                <Route
-                  path="/reports"
-                  element={
-                    <PrivateRoute requiredRoles={["admin"]}>
-                      <Reports />
-                    </PrivateRoute>
-                  }
-                />
-
-                <Route
-                  path="/database"
-                  element={
-                    <PrivateRoute requiredRoles={["admin"]}>
-                      <DatabaseInitializer />
                     </PrivateRoute>
                   }
                 />
@@ -137,47 +85,20 @@ const App = () => (
                   }
                 />
 
-                {/* Supervisor Routes */}
-                <Route
-                  path="/financial-requests"
-                  element={
-                    <PrivateRoute
-                      requiredRoles={["admin", "supervisor", "finance"]}
-                    >
-                      <FinancialRequestComponent />
-                    </PrivateRoute>
-                  }
-                />
-
                 {/* Added Ticket Route */}
                 <Route
                   path="/tickets"
                   element={
                     <PrivateRoute
-                      requiredRoles={["admin", "supervisor", "finance", "user", "vendor"]}
+                      requiredRoles={[
+                        "admin",
+                        "supervisor",
+                        "finance",
+                        "user",
+                        "vendor",
+                      ]}
                     >
                       <TicketComponent />
-                    </PrivateRoute>
-                  }
-                />
-
-                {/* Finance Routes */}
-                <Route
-                  path="/invoices"
-                  element={
-                    <PrivateRoute
-                      requiredRoles={["admin", "finance", "vendor"]}
-                    >
-                      <InvoiceComponent />
-                    </PrivateRoute>
-                  }
-                />
-
-                <Route
-                  path="/payments"
-                  element={
-                    <PrivateRoute requiredRoles={["admin", "finance"]}>
-                      <PaymentComponent />
                     </PrivateRoute>
                   }
                 />
@@ -195,42 +116,6 @@ const App = () => (
                       ]}
                     >
                       <VendorDirectory />
-                    </PrivateRoute>
-                  }
-                />
-
-                <Route
-                  path="/billing"
-                  element={
-                    <PrivateRoute
-                      requiredRoles={["admin", "finance", "vendor"]}
-                    >
-                      <BillingComponent />
-                    </PrivateRoute>
-                  }
-                />
-
-                {/* AI Insights Route */}
-                <Route
-                  path="/ai-insights"
-                  element={
-                    <PrivateRoute
-                      requiredRoles={["admin", "supervisor", "finance"]}
-                    >
-                      <AIInsights />
-                    </PrivateRoute>
-                  }
-                />
-
-                {/* Settings Route - placeholder for future implementation */}
-                <Route
-                  path="/settings"
-                  element={
-                    <PrivateRoute>
-                      <div className="p-6">
-                        <h1 className="text-3xl font-bold">Settings</h1>
-                        <p className="mt-4">This page is under development.</p>
-                      </div>
                     </PrivateRoute>
                   }
                 />

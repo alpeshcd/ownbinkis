@@ -1,12 +1,20 @@
 import * as React from "react"
-
-import type {
-  ToastActionElement,
-  ToastProps,
+import {
+  Toast,
+  ToastClose,
+  ToastDescription,
+  ToastProvider,
+  ToastTitle,
+  ToastViewport,
 } from "@/components/ui/toast"
 
-const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
+export type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>
+export type ToastActionElement = React.ReactElement<typeof ToastClose>
+
+// Shorter timeout for better UX (5 seconds)
+const TOAST_REMOVE_DELAY = 5000
+// Allow more toasts to be displayed at once
+const TOAST_LIMIT = 3
 
 type ToasterToast = ToastProps & {
   id: string
@@ -90,8 +98,6 @@ export const reducer = (state: State, action: Action): State => {
     case "DISMISS_TOAST": {
       const { toastId } = action
 
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
       if (toastId) {
         addToRemoveQueue(toastId)
       } else {
@@ -137,22 +143,30 @@ function dispatch(action: Action) {
   })
 }
 
-type Toast = Omit<ToasterToast, "id">
+// Define a separate type for the toast function parameters
+type ToastOptions = Omit<ToasterToast, "id"> & {
+  variant?: "default" | "destructive" | "success"
+}
 
-function toast({ ...props }: Toast) {
+function toast(options: ToastOptions) {
   const id = genId()
+
+  // Use proper variant based on options or fallback to default
+  const variant = options.variant || "default"
 
   const update = (props: ToasterToast) =>
     dispatch({
       type: "UPDATE_TOAST",
       toast: { ...props, id },
     })
+    
   const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
 
   dispatch({
     type: "ADD_TOAST",
     toast: {
-      ...props,
+      ...options,
+      variant,
       id,
       open: true,
       onOpenChange: (open) => {
@@ -162,11 +176,12 @@ function toast({ ...props }: Toast) {
   })
 
   return {
-    id: id,
+    id,
     dismiss,
     update,
   }
 }
+
 
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState)
@@ -188,4 +203,11 @@ function useToast() {
   }
 }
 
-export { useToast, toast }
+// Export enhanced toast function with specific variants
+const toastWithVariants = {
+  default: (props: Omit<ToastOptions, "variant">) => toast({ ...props, variant: "default" }),
+  destructive: (props: Omit<ToastOptions, "variant">) => toast({ ...props, variant: "destructive" }),
+  success: (props: Omit<ToastOptions, "variant">) => toast({ ...props, variant: "success" }),
+}
+
+export { useToast, toast, toastWithVariants }

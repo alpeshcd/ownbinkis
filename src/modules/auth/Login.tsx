@@ -90,7 +90,7 @@ const Login = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="email@example.com"
+                  placeholder="email"
                   required
                 />
               </div>
@@ -103,19 +103,14 @@ const Login = () => {
                   >
                     Password
                   </label>
-                  <Link
-                    to="/forgot-password"
-                    className="text-sm text-bnkis-primary hover:underline"
-                  >
-                    Forgot Password?
-                  </Link>
+                 
                 </div>
                 <Input
                   id="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="password"
                   required
                 />
               </div>
@@ -127,7 +122,7 @@ const Login = () => {
           </CardContent>
 
           <CardFooter className="flex justify-center text-sm text-gray-500">
-            &copy; {new Date().getFullYear()} BNKIS, Inc. All rights reserved.
+            &copy; {new Date().getFullYear()} BNKIS, All rights reserved.
           </CardFooter>
         </Card>
       </div>
