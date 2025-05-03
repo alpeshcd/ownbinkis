@@ -32,16 +32,32 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      await login(email, password);
+      // Convert email to lowercase before attempting login
+      const lowercaseEmail = email.trim().toLowerCase();
+      
+      await login(lowercaseEmail, password);
       console.log("Login successful, redirecting to:", from);
       // Navigate to the intended destination
       navigate(from, { replace: true });
     } catch (err) {
       console.error("Login error:", err);
-      setError((err as Error).message);
+      
+      // Provide more user-friendly error messages
+      const errorMessage = (err as Error).message;
+      let userFriendlyMessage = errorMessage;
+      
+      if (errorMessage.includes("auth/invalid-login-credentials") || 
+          errorMessage.includes("auth/wrong-password") ||
+          errorMessage.includes("auth/user-not-found")) {
+        userFriendlyMessage = "Invalid email or password. Please try again.";
+      } else if (errorMessage.includes("auth/too-many-requests")) {
+        userFriendlyMessage = "Too many failed login attempts. Please try again later.";
+      }
+      
+      setError(userFriendlyMessage);
       toast({
         title: "Login Failed",
-        description: (err as Error).message,
+        description: userFriendlyMessage,
         variant: "destructive",
       });
     } finally {

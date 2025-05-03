@@ -27,6 +27,7 @@ export const PrivateRoute: React.FC<PrivateRouteProps> = ({
   }
 
   // Debug: log user role and required roles
+  console.log("Current user:", currentUser);
   console.log("Current user role:", currentUser.role);
   console.log("Required roles for this route:", requiredRoles);
 

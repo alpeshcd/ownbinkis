@@ -23,14 +23,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Firebase auth state monitoring
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
+      try {
+        if (firebaseUser) {
+          console.log("Firebase user authenticated:", firebaseUser.uid);
           // Get user data from Firestore
           const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
           
           if (userDoc.exists()) {
             // User exists in Firestore
-            const userData = userDoc.data() as Omit<User, "id">;
+            const userData = userDoc.data();
+            console.log("Firestore user data:", userData);
             
             // Make sure the role is valid, default to "user" if not
             const validRoles: UserRole[] = ["admin", "supervisor", "finance", "vendor", "user"];
@@ -38,11 +40,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             
             setCurrentUser({
               id: firebaseUser.uid,
-              ...userData,
+              email: userData.email || firebaseUser.email || "",
+              name: userData.name || firebaseUser.displayName || "",
               role,
               createdAt: safelyConvertToDate(userData.createdAt)
             });
           } else {
+            console.log("User not found in Firestore, creating default user document");
             // User exists in auth but not in Firestore
             // This is an edge case, but we'll handle it
             const defaultUser: User = {
@@ -63,9 +67,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             
             setCurrentUser(defaultUser);
           }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-          // Set user with basic info from Firebase Auth to avoid login failures
+        } else {
+          // No user signed in
+          setCurrentUser(null);
+        }
+      } catch (error) {
+        console.error("Error during authentication state change:", error);
+        // If there's an error fetching from Firestore, but we have a Firebase user,
+        // set basic user info to avoid login failures
+        if (firebaseUser) {
           setCurrentUser({
             id: firebaseUser.uid,
             email: firebaseUser.email || "",
@@ -73,12 +83,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             role: "user",
             createdAt: new Date()
           });
+        } else {
+          setCurrentUser(null);
         }
-      } else {
-        // No user signed in
-        setCurrentUser(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -87,18 +97,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Login function - enhanced to handle role validation
   const login = async (email: string, password: string): Promise<User> => {
     const lowercaseEmail = email.toLowerCase();
+    console.log("Attempting login with email:", lowercaseEmail);
     
     try {
       // Sign in with Firebase
       const userCredential = await signInWithEmailAndPassword(auth, lowercaseEmail, password);
       const firebaseUser = userCredential.user;
+      console.log("Firebase authentication successful for user:", firebaseUser.uid);
 
       // Try to get user data from Firestore
       try {
         const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
         
         if (userDoc.exists()) {
-          const userData = userDoc.data() as Omit<User, "id">;
+          const userData = userDoc.data();
+          console.log("Firestore user data:", userData);
           
           // Ensure the role is valid
           const validRoles: UserRole[] = ["admin", "supervisor", "finance", "vendor", "user"];
@@ -106,9 +119,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           const user: User = {
             id: firebaseUser.uid,
-            ...userData,
+            email: userData.email || firebaseUser.email || "",
+            name: userData.name || firebaseUser.displayName || "",
             role,
-            createdAt: safelyConvertToDate(userData.createdAt)
+            createdAt: safelyConvertToDate(userData.createdAt),
+            updatedAt: userData.updatedAt ? safelyConvertToDate(userData.updatedAt) : undefined
           };
           
           toast({
@@ -118,6 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           return user;
         } else {
+          console.log("User not found in Firestore, creating default user");
           // If user exists in Auth but not in Firestore, create a default user document
           const defaultUser: User = {
             id: firebaseUser.uid,
@@ -142,7 +158,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return defaultUser;
         }
       } catch (error) {
-        console.error("Error fetching user data:", error);
+        console.error("Error fetching user data from Firestore:", error);
         // Even if Firestore is offline, we can still create a user object from Auth data
         const fallbackUser: User = {
           id: firebaseUser.uid,
@@ -160,6 +176,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return fallbackUser;
       }
     } catch (error: any) {
+      console.error("Firebase login error:", error);
+      console.error("Error code:", error.code);
+      console.error("Error message:", error.message);
+      
       // Handle specific Firebase auth errors
       if (error.code === "auth/wrong-password") {
         throw new Error("Invalid password");
@@ -169,8 +189,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error("Invalid email format");
       } else if (error.code === "auth/too-many-requests") {
         throw new Error("Too many login attempts. Please try again later.");
+      } else if (error.code === "auth/invalid-login-credentials") {
+        throw new Error("Invalid email or password. Please try again.");
       } else {
-        console.error("Login error:", error);
         throw new Error(error.message || "Failed to log in");
       }
     }
