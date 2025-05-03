@@ -80,7 +80,7 @@ const Register = () => {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="John Doe"
+                  placeholder="Name"
                   required
                 />
               </div>
@@ -94,7 +94,7 @@ const Register = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="email@example.com"
+                  placeholder="Email"
                   required
                 />
               </div>
@@ -108,7 +108,7 @@ const Register = () => {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="Password"
                   required
                 />
               </div>
@@ -122,7 +122,7 @@ const Register = () => {
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="Confirm Password"
                   required
                 />
               </div>
@@ -143,7 +143,7 @@ const Register = () => {
           </CardContent>
           
           <CardFooter className="flex justify-center text-sm text-gray-500">
-            &copy; {new Date().getFullYear()} BNKIS, Inc. All rights reserved.
+            &copy; {new Date().getFullYear()} BNKIS, All rights reserved.
           </CardFooter>
         </Card>
       </div>

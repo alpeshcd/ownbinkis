@@ -2,7 +2,13 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -12,12 +18,19 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
-import { getCollection, createDocument, updateDocument, deleteDocument } from "@/firebase/firestore";
+import {
+  getCollection,
+  createDocument,
+  updateDocument,
+  deleteDocument,
+} from "@/firebase/firestore";
 import { auth } from "@/firebase/auth";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserRole } from "@/contexts/auth/types";
 import PaginationControl from "@/components/common/Pagination";
+import { collection, doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface User {
   id: string;
@@ -40,7 +53,7 @@ const UserManagement = () => {
   });
   const { toast } = useToast();
   const { currentUser } = useAuth();
-  
+
   // Search and pagination
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -55,15 +68,20 @@ const UserManagement = () => {
     try {
       setLoading(true);
       const usersData = await getCollection("users");
-      
+
       const formattedUsers = usersData.map((user) => ({
         id: user.id,
         name: user.name || "",
         email: user.email || "",
         role: (user.role || "user") as UserRole,
-        createdAt: user.createdAt ? new Date(user.createdAt.seconds * 1000) : new Date(),
+        createdAt:
+        user.createdAt && user.createdAt.seconds
+          ? new Date(user.createdAt.seconds * 1000)
+          : user.createdAt instanceof Date
+          ? user.createdAt
+          : new Date(), // fallback if missing or malformed
       }));
-      
+
       setUsers(formattedUsers);
     } catch (error: any) {
       console.error("Error fetching users:", error);
@@ -92,10 +110,10 @@ const UserManagement = () => {
     if (!window.confirm("Are you sure you want to delete this user?")) {
       return;
     }
-    
+
     try {
       await deleteDocument("users", userId);
-      setUsers(users.filter(u => u.id !== userId));
+      setUsers(users.filter((u) => u.id !== userId));
       toast({
         title: "User Deleted",
         description: "User has been successfully deleted.",
@@ -112,7 +130,7 @@ const UserManagement = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       if (isEditing && selectedUser) {
         // Update existing user - only update name and role
@@ -120,61 +138,69 @@ const UserManagement = () => {
           name: formData.name,
           role: formData.role as UserRole,
         };
-        
+
         await updateDocument("users", selectedUser.id, userData);
-        
-        setUsers(users.map(user => 
-          user.id === selectedUser.id 
-            ? { ...user, ...userData } 
-            : user
-        ));
-        
+
+        setUsers(
+          users.map((user) =>
+            user.id === selectedUser.id ? { ...user, ...userData } : user
+          )
+        );
+
         toast({
           title: "User Updated",
           description: "User has been successfully updated.",
         });
       } else {
-        // Add new user
-        // 1. Create auth user
-        const userCredential = await createUserWithEmailAndPassword(
-          auth, 
-          formData.email, 
-          formData.password
-        );
-        
-        const firebaseUser = userCredential.user;
-        
-        // 2. Create user document in Firestore
-        const userData = {
-          name: formData.name,
-          email: formData.email,
-          role: formData.role,
-        };
-        
-        await createDocument("users", userData, firebaseUser.uid);
-        
-        // 3. Add to local state
-        const newUser: User = {
-          id: firebaseUser.uid,
-          ...userData,
-          createdAt: new Date(),
-        };
-        
-        setUsers([...users, newUser]);
-        
-        toast({
-          title: "User Created",
-          description: "New user has been successfully created.",
-        });
+        // Add new user - use admin SDK instead of client-side auth
+        try {
+          // Create the user document in Firestore first
+          const userData = {
+            name: formData.name,
+            email: formData.email,
+            role: formData.role as UserRole,
+            createdAt: serverTimestamp(), // Use Firebase server timestamp
+          };
+
+          // Generate a unique ID or use a utility function
+          const newDocRef = doc(collection(db, "users"));
+          const newUserId = newDocRef.id;
+
+          // Create the user document with the generated ID
+          await setDoc(newDocRef, userData);
+
+          // Add to local state with client-side date for immediate UI display
+          const newUser: User = {
+            id: newUserId,
+            ...userData,
+            createdAt: new Date(), // Use client-side date for immediate UI display
+          };
+
+          setUsers([...users, newUser]);
+
+          toast({
+            title: "User Created",
+            description: "New user has been successfully created.",
+          });
+        } catch (error: any) {
+          console.error("Error creating user:", error);
+          toast({
+            title: "Error",
+            description: `Failed to create user: ${error.message}`,
+            variant: "destructive",
+          });
+        }
       }
-      
+
       // Reset form
       resetForm();
     } catch (error: any) {
       console.error("Error saving user:", error);
       toast({
         title: "Error",
-        description: `Failed to ${isEditing ? "update" : "create"} user: ${error.message}`,
+        description: `Failed to ${isEditing ? "update" : "create"} user: ${
+          error.message
+        }`,
         variant: "destructive",
       });
     }
@@ -198,12 +224,15 @@ const UserManagement = () => {
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  
+
   // Calculate pagination values
   const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  
+  const paginatedUsers = filteredUsers.slice(
+    startIndex,
+    startIndex + ITEMS_PER_PAGE
+  );
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
@@ -218,14 +247,11 @@ const UserManagement = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 container mt-6">
       <div>
         <h2 className="text-3xl font-bold tracking-tight">User Management</h2>
-        <p className="text-muted-foreground">
-          Add, edit, and manage user accounts in the system.
-        </p>
       </div>
-      
+
       <div className="mb-4">
         <Input
           placeholder="Search users..."
@@ -234,49 +260,53 @@ const UserManagement = () => {
           className="max-w-sm"
         />
       </div>
-      
-      <div className="grid gap-6 md:grid-cols-2">
+
+      <div className="">
         {/* User Form */}
         <Card>
           <CardHeader>
             <CardTitle>{isEditing ? "Edit User" : "Add New User"}</CardTitle>
-            <CardDescription>
-              {isEditing 
-                ? "Update the user's information" 
-                : "Create a new user account"}
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
-                <Input 
+                <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input 
+                <Input
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                   required
                   disabled={isEditing} // Can't change email for existing users
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="role">Role</Label>
-                <select 
+                <select
                   id="role"
                   className="w-full p-2 border border-gray-300 rounded"
                   value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      role: e.target.value as UserRole,
+                    })
+                  }
                 >
                   <option value="user">User</option>
                   <option value="vendor">Vendor</option>
@@ -285,20 +315,22 @@ const UserManagement = () => {
                   <option value="admin">Admin</option>
                 </select>
               </div>
-              
+
               {!isEditing && (
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
-                  <Input 
+                  <Input
                     id="password"
                     type="password"
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, password: e.target.value })
+                    }
                     required={!isEditing}
                   />
                 </div>
               )}
-              
+
               <div className="flex justify-between mt-4">
                 <Button variant="outline" type="button" onClick={resetForm}>
                   {isEditing ? "Cancel" : "Clear"}
@@ -310,14 +342,11 @@ const UserManagement = () => {
             </form>
           </CardContent>
         </Card>
-        
+
         {/* Users List */}
         <Card>
           <CardHeader>
             <CardTitle>User Accounts</CardTitle>
-            <CardDescription>
-              Manage existing user accounts
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="rounded-md border overflow-hidden">
@@ -344,57 +373,67 @@ const UserManagement = () => {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    paginatedUsers.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>
-                          <div className="font-medium">{user.name}</div>
-                          <div className="text-sm text-muted-foreground">{user.email}</div>
-                        </TableCell>
-                        <TableCell>
-                          <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full
-                            ${user.role === "admin" 
-                              ? "bg-red-100 text-red-800" 
-                              : user.role === "supervisor" 
-                              ? "bg-blue-100 text-blue-800"
-                              : user.role === "finance"
-                              ? "bg-green-100 text-green-800"
-                              : user.role === "vendor"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-gray-100 text-gray-800"
-                            }`}>
-                            {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatDate(user.createdAt)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex justify-end space-x-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleEdit(user)}
-                              disabled={currentUser?.id === user.id} // Can't edit yourself
+                    paginatedUsers.map((user) => {
+                      console.log("User:", user); // 🔍 Debug log for each user
+
+                      return (
+                        <TableRow key={user.id}>
+                          <TableCell>
+                            <div className="font-medium">{user.name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {user.email}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`inline-block px-2 py-1 text-xs font-medium rounded-full
+                                ${
+                                  user.role === "admin"
+                                    ? "bg-red-100 text-red-800"
+                                    : user.role === "supervisor"
+                                    ? "bg-blue-100 text-blue-800"
+                                    : user.role === "finance"
+                                    ? "bg-green-100 text-green-800"
+                                    : user.role === "vendor"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : "bg-gray-100 text-gray-800"
+                                }`}
                             >
-                              Edit
-                            </Button>
-                            <Button 
-                              variant="destructive" 
-                              size="sm"
-                              onClick={() => handleDelete(user.id)}
-                              disabled={currentUser?.id === user.id} // Can't delete yourself
-                            >
-                              Delete
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                              {user.role.charAt(0).toUpperCase() +
+                                user.role.slice(1)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatDate(user.createdAt)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex justify-end space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEdit(user)}
+                                disabled={currentUser?.id === user.id}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDelete(user.id)}
+                                disabled={currentUser?.id === user.id}
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
             </div>
-            
+
             {/* Pagination control */}
             {filteredUsers.length > ITEMS_PER_PAGE && (
               <div className="flex justify-center mt-4">

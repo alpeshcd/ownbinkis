@@ -20,7 +20,6 @@ const Profile = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    // In a real app, this would update the user's profile in the database
     setTimeout(() => {
       toast({
         title: "Profile Updated",
@@ -35,7 +34,7 @@ const Profile = () => {
     <div className="container mx-auto px-4 py-8 pt-20 sm:pt-24">
       <h1 className="text-3xl font-bold mb-6">User Profile</h1>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="  gap-6">
         {/* Profile sidebar */}
         <div className="md:col-span-1">
           <Card>
@@ -65,7 +64,6 @@ const Profile = () => {
           <Card>
             <CardHeader>
               <CardTitle>Profile Details</CardTitle>
-              <CardDescription>View and update your personal information</CardDescription>
             </CardHeader>
             
             <CardContent>

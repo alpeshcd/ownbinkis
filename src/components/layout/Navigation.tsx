@@ -41,15 +41,15 @@ export const Navigation = () => {
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   const navItems = [
-    {
-      label: "Dashboard",
-      path: "/",
-      icon: <Home className="h-5 w-5" />,
-      roles: ["admin", "supervisor", "finance", "vendor", "user"],
-    },
+    // {
+    //   label: "Dashboard",
+    //   path: "/",
+    //   icon: <Home className="h-5 w-5" />,
+    //   roles: ["admin", "supervisor", "finance", "vendor", "user"],
+    // },
     {
       label: "User Management",
-      path: "/users",
+      path: "/",
       icon: <Users className="h-5 w-5" />,
       roles: ["admin"],
     },
@@ -158,9 +158,7 @@ export const Navigation = () => {
               <DropdownMenuItem asChild>
                 <Link to="/profile">Profile</Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/settings">Settings</Link>
-              </DropdownMenuItem>
+              
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => logout()}>
                 <LogOut className="h-4 w-4 mr-2" />

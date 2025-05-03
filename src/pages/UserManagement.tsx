@@ -27,7 +27,12 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { UserRole, useAuth } from "@/contexts/AuthContext";
-import { getCollection, createDocument, updateDocument, deleteDocument } from "@/firebase/firestore";
+import {
+  getCollection,
+  createDocument,
+  updateDocument,
+  deleteDocument,
+} from "@/firebase/firestore";
 import { auth } from "@/firebase/auth";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import PaginationControl from "@/components/common/Pagination";
@@ -74,16 +79,18 @@ const UserManagement = () => {
     try {
       setLoading(true);
       const usersData = await getCollection("users");
-      
+
       const formattedUsers = usersData.map((user) => ({
         id: user.id,
         name: user.name || "",
         email: user.email || "",
         role: (user.role || "user") as UserRole,
-        createdAt: user.createdAt ? new Date(user.createdAt.seconds * 1000) : new Date(),
+        createdAt: user.createdAt
+          ? new Date(user.createdAt.seconds * 1000)
+          : new Date(),
         status: "active", // Default status
       }));
-      
+
       setUsers(formattedUsers);
     } catch (error: any) {
       console.error("Error fetching users:", error);
@@ -112,22 +119,22 @@ const UserManagement = () => {
     try {
       // 1. Create auth user
       const userCredential = await createUserWithEmailAndPassword(
-        auth, 
-        newUser.email, 
+        auth,
+        newUser.email,
         newUser.password
       );
-      
+
       const firebaseUser = userCredential.user;
-      
+
       // 2. Create user document in Firestore
       const userData = {
         name: newUser.name,
         email: newUser.email,
         role: newUser.role,
       };
-      
+
       await createDocument("users", userData, firebaseUser.uid);
-      
+
       // 3. Add to local state
       const user: User = {
         id: firebaseUser.uid,
@@ -135,9 +142,9 @@ const UserManagement = () => {
         createdAt: new Date(),
         status: "active",
       };
-      
+
       setUsers([...users, user]);
-      
+
       // Reset form and close dialog
       setNewUser({
         name: "",
@@ -146,7 +153,7 @@ const UserManagement = () => {
         password: "",
       });
       setIsAddUserOpen(false);
-      
+
       toast({
         title: "User Added",
         description: `${user.name} has been added successfully.`,
@@ -172,17 +179,17 @@ const UserManagement = () => {
         role: editingUser.role,
         // Email can't be updated
       };
-      
+
       await updateDocument("users", editingUser.id, userData);
-      
+
       // Update local state
       const updatedUsers = users.map((user) =>
         user.id === editingUser.id ? editingUser : user
       );
-      
+
       setUsers(updatedUsers);
       setIsEditUserOpen(false);
-      
+
       toast({
         title: "User Updated",
         description: `${editingUser.name}'s information has been updated.`,
@@ -208,18 +215,18 @@ const UserManagement = () => {
       });
       return;
     }
-    
+
     const userToDelete = users.find((user) => user.id === userId);
     if (!userToDelete) return;
-    
+
     try {
       // Delete from Firebase
       await deleteDocument("users", userId);
-      
+
       // Update local state
       const updatedUsers = users.filter((user) => user.id !== userId);
       setUsers(updatedUsers);
-      
+
       toast({
         title: "User Deleted",
         description: `${userToDelete.name} has been removed from the system.`,
@@ -241,12 +248,15 @@ const UserManagement = () => {
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  
+
   // Calculate pagination values
   const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  
+  const paginatedUsers = filteredUsers.slice(
+    startIndex,
+    startIndex + ITEMS_PER_PAGE
+  );
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     window.scrollTo(0, 0);
@@ -254,7 +264,7 @@ const UserManagement = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 pt-20 sm:pt-24">
-      <div className="flex justify-between items-center mb-6">
+      <div className=" mb-6">
         <h1 className="text-3xl font-bold">User Management</h1>
         <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
           <DialogTrigger asChild>
@@ -264,8 +274,8 @@ const UserManagement = () => {
             <DialogHeader>
               <DialogTitle>Add New User</DialogTitle>
               <DialogDescription>
-                Create a new user account. The user will receive an email with login
-                instructions.
+                Create a new user account. The user will receive an email with
+                login instructions.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -276,7 +286,9 @@ const UserManagement = () => {
                 <Input
                   id="name"
                   value={newUser.name}
-                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                  onChange={(e) =>
+                    setNewUser({ ...newUser, name: e.target.value })
+                  }
                   placeholder="John Doe"
                 />
               </div>
@@ -288,7 +300,9 @@ const UserManagement = () => {
                   id="email"
                   type="email"
                   value={newUser.email}
-                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  onChange={(e) =>
+                    setNewUser({ ...newUser, email: e.target.value })
+                  }
                   placeholder="john.doe@example.com"
                 />
               </div>
@@ -298,7 +312,9 @@ const UserManagement = () => {
                 </label>
                 <Select
                   value={newUser.role}
-                  onValueChange={(value) => setNewUser({ ...newUser, role: value as UserRole })}
+                  onValueChange={(value) =>
+                    setNewUser({ ...newUser, role: value as UserRole })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select role" />
@@ -320,7 +336,9 @@ const UserManagement = () => {
                   id="password"
                   type="password"
                   value={newUser.password}
-                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                  onChange={(e) =>
+                    setNewUser({ ...newUser, password: e.target.value })
+                  }
                   placeholder="••••••••"
                 />
               </div>
@@ -399,16 +417,24 @@ const UserManagement = () => {
                     ></span>
                     {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
                   </TableCell>
-                  <TableCell>
-                    {user.createdAt.toLocaleDateString()}
-                  </TableCell>
+                  <TableCell>{user.createdAt.toLocaleDateString()}</TableCell>
                   <TableCell className="text-right space-x-2">
-                    <Dialog open={isEditUserOpen && editingUser?.id === user.id} onOpenChange={(open) => {
-                      setIsEditUserOpen(open);
-                      if (open) setEditingUser(user);
-                    }}>
+                    <Dialog
+                      open={isEditUserOpen && editingUser?.id === user.id}
+                      onOpenChange={(open) => {
+                        setIsEditUserOpen(open);
+                        if (open) setEditingUser(user);
+                      }}
+                    >
                       <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" disabled={currentUser?.id === user.id && currentUser?.role !== "admin"}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={
+                            currentUser?.id === user.id &&
+                            currentUser?.role !== "admin"
+                          }
+                        >
                           Edit
                         </Button>
                       </DialogTrigger>
@@ -422,7 +448,10 @@ const UserManagement = () => {
                         {editingUser && (
                           <div className="space-y-4 py-4">
                             <div className="space-y-2">
-                              <label htmlFor="edit-name" className="text-sm font-medium">
+                              <label
+                                htmlFor="edit-name"
+                                className="text-sm font-medium"
+                              >
                                 Full Name
                               </label>
                               <Input
@@ -437,7 +466,10 @@ const UserManagement = () => {
                               />
                             </div>
                             <div className="space-y-2">
-                              <label htmlFor="edit-email" className="text-sm font-medium">
+                              <label
+                                htmlFor="edit-email"
+                                className="text-sm font-medium"
+                              >
                                 Email
                               </label>
                               <Input
@@ -447,10 +479,15 @@ const UserManagement = () => {
                                 disabled
                                 className="bg-gray-100"
                               />
-                              <p className="text-xs text-gray-500">Email cannot be changed</p>
+                              <p className="text-xs text-gray-500">
+                                Email cannot be changed
+                              </p>
                             </div>
                             <div className="space-y-2">
-                              <label htmlFor="edit-role" className="text-sm font-medium">
+                              <label
+                                htmlFor="edit-role"
+                                className="text-sm font-medium"
+                              >
                                 Role
                               </label>
                               <Select
@@ -468,15 +505,22 @@ const UserManagement = () => {
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="admin">Admin</SelectItem>
-                                  <SelectItem value="supervisor">Supervisor</SelectItem>
-                                  <SelectItem value="finance">Finance</SelectItem>
+                                  <SelectItem value="supervisor">
+                                    Supervisor
+                                  </SelectItem>
+                                  <SelectItem value="finance">
+                                    Finance
+                                  </SelectItem>
                                   <SelectItem value="vendor">Vendor</SelectItem>
                                   <SelectItem value="user">User</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
                             <div className="space-y-2">
-                              <label htmlFor="edit-status" className="text-sm font-medium">
+                              <label
+                                htmlFor="edit-status"
+                                className="text-sm font-medium"
+                              >
                                 Status
                               </label>
                               <Select
@@ -493,14 +537,19 @@ const UserManagement = () => {
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="active">Active</SelectItem>
-                                  <SelectItem value="inactive">Inactive</SelectItem>
+                                  <SelectItem value="inactive">
+                                    Inactive
+                                  </SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
                           </div>
                         )}
                         <DialogFooter>
-                          <Button variant="outline" onClick={() => setIsEditUserOpen(false)}>
+                          <Button
+                            variant="outline"
+                            onClick={() => setIsEditUserOpen(false)}
+                          >
                             Cancel
                           </Button>
                           <Button onClick={handleEditUser}>Save Changes</Button>
@@ -511,7 +560,10 @@ const UserManagement = () => {
                       variant="destructive"
                       size="sm"
                       onClick={() => handleDeleteUser(user.id)}
-                      disabled={currentUser?.id === user.id || currentUser?.role !== "admin"}
+                      disabled={
+                        currentUser?.id === user.id ||
+                        currentUser?.role !== "admin"
+                      }
                     >
                       Delete
                     </Button>
@@ -522,7 +574,7 @@ const UserManagement = () => {
           </TableBody>
         </Table>
       </div>
-      
+
       {/* Pagination control */}
       {filteredUsers.length > ITEMS_PER_PAGE && (
         <div className="flex justify-center mt-8">

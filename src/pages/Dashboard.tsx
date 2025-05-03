@@ -82,7 +82,7 @@ const Dashboard = () => {
         { name: "Invoices", icon: <FileText className="h-10 w-10" />, path: "/invoices", color: "bg-pink-100", count: counts.invoices },
         { name: "Payments", icon: <CreditCard className="h-10 w-10" />, path: "/payments", color: "bg-indigo-100", count: counts.payments },
         { name: "Vendor Directory", icon: <Building className="h-10 w-10" />, path: "/vendors", color: "bg-orange-100", count: counts.vendors },
-        { name: "Settings", icon: <Settings className="h-10 w-10" />, path: "/settings", color: "bg-gray-100" },
+        { name: "Settings", icon: <Settings className="h-10 w-10" />, path: "/navs", color: "bg-gray-100" },
       );
     }
     

@@ -12,12 +12,13 @@ export default {
 	prefix: "",
 	theme: {
 		container: {
-			center: true,
-			padding: '2rem',
-			screens: {
-				'2xl': '1400px'
-			}
+		  center: true,
+		  padding: '1rem', // Adjust as needed
+		  screens: {
+			DEFAULT: '900px', // Set default container width to 1000px
+		  },
 		},
+	  
 		extend: {
 			colors: {
 				border: 'hsl(var(--border))',

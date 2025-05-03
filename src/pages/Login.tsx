@@ -45,7 +45,6 @@ const Login = () => {
         <Card className="shadow-lg">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-bold">BNKIS</CardTitle>
-            <CardDescription>Business Network and Knowledge Information System</CardDescription>
           </CardHeader>
           
           <CardContent>
@@ -97,14 +96,14 @@ const Login = () => {
               </Button>
             </form>
 
-            <div className="mt-6">
-              <p className="text-center text-sm text-gray-500 mb-4">
-                Don't have an account?{" "}
-                <Link to="/register" className="text-bnkis-primary hover:underline">
-                  Register
-                </Link>
-              </p>
-            </div>
+              {/* <div className="mt-6">
+                <p className="text-center text-sm text-gray-500 mb-4">
+                  Don't have an account?{" "}
+                  <Link to="/register" className="text-bnkis-primary hover:underline">
+                    Register
+                  </Link>
+                </p>
+              </div> */}
           </CardContent>
           
           <CardFooter className="flex justify-center text-sm text-gray-500">
