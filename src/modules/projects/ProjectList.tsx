@@ -27,6 +27,11 @@ const ProjectList: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
+  useEffect(() => {
+    // Make sure to fetch projects when component mounts
+    fetchProjects();
+  }, [fetchProjects]);
+
   // Filter projects based on search term and status
   useEffect(() => {
     let result = [...projects];
@@ -58,6 +63,10 @@ const ProjectList: React.FC = () => {
 
   const handleCreateProject = () => {
     navigate("/projects/new");
+  };
+  
+  const handleViewProject = (projectId: string) => {
+    navigate(`/projects/${projectId}`);
   };
   
   // Calculate pagination values
@@ -165,7 +174,11 @@ const ProjectList: React.FC = () => {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {paginatedProjects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
+              <ProjectCard 
+                key={project.id} 
+                project={project}
+                onClick={() => handleViewProject(project.id)}
+              />
             ))}
           </div>
           
