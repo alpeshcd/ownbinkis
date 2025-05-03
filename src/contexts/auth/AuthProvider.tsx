@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { 
   createUserWithEmailAndPassword, 
@@ -30,9 +31,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (userDoc.exists()) {
             // User exists in Firestore
             const userData = userDoc.data() as Omit<User, "id">;
+            
+            // Make sure the role is valid, default to "user" if not
+            const validRoles: UserRole[] = ["admin", "supervisor", "finance", "vendor", "user"];
+            const role = validRoles.includes(userData.role as UserRole) ? userData.role as UserRole : "user";
+            
             setCurrentUser({
               id: firebaseUser.uid,
               ...userData,
+              role,
               createdAt: safelyConvertToDate(userData.createdAt)
             });
           } else {
@@ -77,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  // Login function - simplified to focus on Firebase authentication
+  // Login function - enhanced to handle role validation
   const login = async (email: string, password: string): Promise<User> => {
     const lowercaseEmail = email.toLowerCase();
     
@@ -92,9 +99,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (userDoc.exists()) {
           const userData = userDoc.data() as Omit<User, "id">;
+          
+          // Ensure the role is valid
+          const validRoles: UserRole[] = ["admin", "supervisor", "finance", "vendor", "user"];
+          const role = validRoles.includes(userData.role as UserRole) ? userData.role as UserRole : "user";
+          
           const user: User = {
             id: firebaseUser.uid,
             ...userData,
+            role,
             createdAt: safelyConvertToDate(userData.createdAt)
           };
           
@@ -157,6 +170,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else if (error.code === "auth/too-many-requests") {
         throw new Error("Too many login attempts. Please try again later.");
       } else {
+        console.error("Login error:", error);
         throw new Error(error.message || "Failed to log in");
       }
     }
@@ -259,9 +273,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (userDoc.exists()) {
         const userData = userDoc.data() as Omit<User, "id">;
+        
+        // Ensure the role is valid
+        const validRoles: UserRole[] = ["admin", "supervisor", "finance", "vendor", "user"];
+        const role = validRoles.includes(userData.role as UserRole) ? userData.role as UserRole : "user";
+        
         setCurrentUser({
           id: auth.currentUser.uid,
           ...userData,
+          role,
           createdAt: safelyConvertToDate(userData.createdAt)
         });
       } else {

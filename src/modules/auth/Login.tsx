@@ -1,6 +1,7 @@
+
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -22,7 +23,8 @@ const Login = () => {
   const location = useLocation();
   const { toast } = useToast();
 
-  const from = location.state?.from?.pathname || "/";
+  // Get the intended destination or default to projects page
+  const from = location.state?.from?.pathname || "/projects";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,8 +33,11 @@ const Login = () => {
 
     try {
       await login(email, password);
+      console.log("Login successful, redirecting to:", from);
+      // Navigate to the intended destination
       navigate(from, { replace: true });
     } catch (err) {
+      console.error("Login error:", err);
       setError((err as Error).message);
       toast({
         title: "Login Failed",
@@ -69,7 +74,7 @@ const Login = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="email"
+                  placeholder="email@example.com"
                   required
                 />
               </div>
@@ -82,19 +87,19 @@ const Login = () => {
                   >
                     Password
                   </label>
-                  {/* <Link
+                  <Link
                     to="/forgot-password"
                     className="text-sm text-bnkis-primary hover:underline"
                   >
                     Forgot Password?
-                  </Link> */}
+                  </Link>
                 </div>
                 <Input
                   id="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="password"
+                  placeholder="••••••••"
                   required
                 />
               </div>
@@ -103,22 +108,10 @@ const Login = () => {
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
-
-            {/* <div className="mt-6">
-              <p className="text-center text-sm text-gray-500 mb-4">
-                Don't have an account?{" "}
-                <Link
-                  to="/register"
-                  className="text-bnkis-primary hover:underline"
-                >
-                  Register
-                </Link>
-              </p>
-            </div> */}
           </CardContent>
 
           <CardFooter className="flex justify-center text-sm text-gray-500">
-            &copy; {new Date().getFullYear()} BNKIS, All rights reserved.
+            &copy; {new Date().getFullYear()} BNKIS, Inc. All rights reserved.
           </CardFooter>
         </Card>
       </div>
