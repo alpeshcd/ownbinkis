@@ -70,10 +70,20 @@ export const Navigation = () => {
       icon: <Ticket className="h-5 w-5" />,
       roles: ["admin", "supervisor"],
     },
+    {
+      label: "Invoices",
+      path: "/invoices",
+      icon: <FileText className="h-5 w-5" />,
+      roles: ["admin", "finance", "vendor"],
+    },
+    
 
-  
-
-   
+    {
+      label: "Billing",
+      path: "/billing",
+      icon: <FileText className="h-5 w-5" />,
+      roles: ["admin", "finance", "vendor"],
+    },
   ];
 
   if (!currentUser) return null;

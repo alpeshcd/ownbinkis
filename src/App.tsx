@@ -8,14 +8,15 @@ import { ProjectProvider } from "@/contexts/ProjectContext";
 import { Navigation } from "@/components/layout/Navigation";
 import { PrivateRoute } from "@/components/auth/PrivateRoute";
 import { Login, Register, ForgotPassword } from "@/modules/auth";
-import {  Unauthorized } from "@/modules/common";
+import { Unauthorized } from "@/modules/common";
 import { Profile } from "@/modules/user";
 import { UserManagement } from "@/modules/admin";
 import { ProjectList, ProjectDetail, NewProject } from "@/modules/projects";
-import { VendorDirectory } from "@/modules/vendor";
+import { BillingComponent, VendorDirectory } from "@/modules/vendor";
 import NotFound from "./pages/NotFound";
 import "./App.css";
 import TicketComponent from "./modules/supervisor/TicketComponent";
+import { InvoiceComponent } from "./modules/finance";
 
 const queryClient = new QueryClient();
 
@@ -116,6 +117,27 @@ const App = () => (
                       ]}
                     >
                       <VendorDirectory />
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/invoices"
+                  element={
+                    <PrivateRoute
+                      requiredRoles={["admin", "finance", "vendor"]}
+                    >
+                      <InvoiceComponent />
+                    </PrivateRoute>
+                  }
+                />
+
+                <Route
+                  path="/billing"
+                  element={
+                    <PrivateRoute
+                      requiredRoles={["admin", "finance", "vendor"]}
+                    >
+                      <BillingComponent />
                     </PrivateRoute>
                   }
                 />

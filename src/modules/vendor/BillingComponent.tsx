@@ -226,7 +226,7 @@ const BillingComponent = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 container">
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Vendor Billing</h2>
         <p className="text-muted-foreground">
@@ -234,7 +234,7 @@ const BillingComponent = () => {
         </p>
       </div>
       
-      <div className="grid gap-6 md:grid-cols-12">
+      <div className="">
         {/* Bill Form */}
         <Card className="md:col-span-5">
           <CardHeader>
