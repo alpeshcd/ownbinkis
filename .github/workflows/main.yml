@@ -1,0 +1,15 @@
+name: add workflow
+on: 
+   push:
+     branches: [ main ]
+
+jobs: 
+  demo:
+    runs-on: ubuntu latest
+
+    steps:
+     - name: gretting
+       run: echo "runserver"
+    
+   
+ 
